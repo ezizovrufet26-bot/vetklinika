@@ -18,7 +18,7 @@ export default function SettingsPage() {
 
     const checkStatus = async () => {
       try {
-        const res = await fetch('/whatsapp-status.json?t=' + Date.now())
+        const res = await fetch('/api/whatsapp/status?t=' + Date.now())
         if (res.ok) {
           const data = await res.json()
           setStatus(data.status)
