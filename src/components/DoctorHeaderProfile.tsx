@@ -29,10 +29,10 @@ export default function DoctorHeaderProfile() {
 
   return (
     <div className="flex items-center gap-4 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0 w-full lg:w-auto justify-end">
-      <div className="text-right hidden sm:block">
-        <h4 className="text-xs font-black text-slate-900">{doctorName}</h4>
-        <p className="text-[10px] font-bold text-emerald-600 flex items-center justify-end gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {doctorTitle}
+      <div className="text-right block">
+        <h4 className="text-xs font-black text-slate-900 truncate max-w-[140px] sm:max-w-none">{doctorName}</h4>
+        <p className="text-[10px] font-bold text-emerald-600 flex items-center justify-end gap-1 truncate max-w-[140px] sm:max-w-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span> {doctorTitle}
         </p>
       </div>
       <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-200 to-emerald-200 p-0.5 shadow-md">

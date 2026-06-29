@@ -72,37 +72,37 @@ export default async function Home() {
           </div>
 
           {/* Center Action Dock */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-center">
+          <div className="flex overflow-x-auto lg:flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-center pb-2 lg:pb-0 scrollbar-none max-w-full">
             <PendingApprovalWidget initialAppointments={pendingAiAppointments as any} />
             <VoiceSimulatorModal />
 
-            <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden xl:block"></div>
+            <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden xl:block shrink-0"></div>
 
-            <Link href="/dashboard/communications" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/dashboard/communications" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>💬</span> Çat
             </Link>
-            <Link href="/patients" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/patients" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>🐾</span> Xəstələr
             </Link>
-            <Link href="/calendar" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/calendar" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>📅</span> Təqvim
             </Link>
-            <Link href="/invoices" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/invoices" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>🧾</span> Qəbzlər
             </Link>
-            <Link href="/inventory" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/inventory" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>📦</span> Anbar
             </Link>
-            <Link href="/laboratory" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/laboratory" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>🔬</span> Lab
             </Link>
-            <Link href="/analytics" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs">
+            <Link href="/analytics" className="px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-extrabold rounded-2xl border border-slate-200/60 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>📊</span> Analitika
             </Link>
-            <Link href="/dashboard/settings" className="px-3.5 py-2.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold rounded-2xl border border-emerald-200/80 transition-all flex items-center gap-2 text-xs">
+            <Link href="/dashboard/settings" className="px-3.5 py-2.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold rounded-2xl border border-emerald-200/80 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>⚙️</span> Ayarlar & QR
             </Link>
-            <Link href="/patients/new" className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 text-xs">
+            <Link href="/patients/new" className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
               <span>➕</span> Yeni Qəbul
             </Link>
           </div>
