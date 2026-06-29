@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
 import DiagnosticViewer from '@/components/DiagnosticViewer'
 import LabResultsTable from '@/components/LabResultsTable'
 import DeviceIntegrationSimulator from '@/components/DeviceIntegrationSimulator'

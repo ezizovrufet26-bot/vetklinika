@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { createProduct } from '@/app/actions/billing'
 
+export const dynamic = 'force-dynamic'
+
 // Seed default products if none exist
 async function ensureSeedProducts() {
   const count = await prisma.product.count()

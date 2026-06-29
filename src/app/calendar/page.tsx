@@ -3,6 +3,8 @@ import { getAppointments } from '@/app/actions/calendar'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CalendarPage() {
   const appointments = await getAppointments()
   const patients = await prisma.patient.findMany({ include: { owner: true } })

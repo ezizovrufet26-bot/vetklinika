@@ -4,6 +4,8 @@ import InvoicePanel from '@/components/InvoicePanel'
 import InvoiceList from '@/components/InvoiceList'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function InvoicesPage() {
   const [invoices, products, patients] = await Promise.all([
     getInvoices(),

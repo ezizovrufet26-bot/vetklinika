@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import BodyMap from '@/components/BodyMap'
 import AiVoiceAssistant from '@/components/AiVoiceAssistant'

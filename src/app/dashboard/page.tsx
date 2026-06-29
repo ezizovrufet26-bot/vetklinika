@@ -5,6 +5,8 @@ import PendingApprovalWidget from "@/components/PendingApprovalWidget";
 import VoiceSimulatorModal from "@/components/VoiceSimulatorModal";
 import { getPendingAiAppointments } from "@/app/actions/ai-receptionist";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const [activePatients, pendingAiAppointments, invoices, allPatients, appointments] = await Promise.all([
     prisma.patient.findMany({
