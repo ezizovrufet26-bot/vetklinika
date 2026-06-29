@@ -1,9 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import RegisterRequestModal from '@/components/RegisterRequestModal'
+import SuperAdminPanel from '@/components/SuperAdminPanel'
 
 export default function LandingPage() {
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false)
+
   useEffect(() => {
     // Dynamically load Lucide icons & GSAP scripts for cinematic animations
     const gsapScript = document.createElement('script')
@@ -47,9 +51,12 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="hidden sm:block font-bold text-sm text-slate-700 hover:text-emerald-600 transition-colors">Sistemə Giriş</Link>
-          <Link href="/dashboard" className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-full shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.03] active:scale-95">
-            Demosu Sınaqdan Keçir
-          </Link>
+          <button 
+            onClick={() => setIsRegisterOpen(true)}
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-full shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.03] active:scale-95"
+          >
+            📝 Qeydiyyatdan Keç Və Sına
+          </button>
         </div>
       </nav>
 
@@ -74,9 +81,12 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link href="/dashboard" className="px-8 py-4 bg-slate-900 hover:bg-emerald-600 text-white font-black text-base rounded-full shadow-2xl shadow-slate-900/20 transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-3">
-                <span>⚡</span> Pulsuz Demo Başlat
-              </Link>
+              <button 
+                onClick={() => setIsRegisterOpen(true)}
+                className="px-8 py-4 bg-slate-900 hover:bg-emerald-600 text-white font-black text-base rounded-full shadow-2xl shadow-slate-900/20 transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-3"
+              >
+                <span>⚡</span> Pulsuz Müraciət Göndər
+              </button>
               <a href="https://wa.me/994501234567" target="_blank" rel="noreferrer" className="px-8 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-base rounded-full border border-emerald-200/80 transition-all flex items-center gap-2">
                 <span>💬</span> WhatsApp İlə Əlaqə
               </a>
@@ -177,6 +187,15 @@ export default function LandingPage() {
         <span className="text-2xl animate-bounce">💬</span>
         <span className="hidden sm:inline pr-2">WhatsApp Canlı Dəstək</span>
       </a>
+
+      {/* Client Registration Modal */}
+      <RegisterRequestModal 
+        isOpen={isRegisterOpen} 
+        onClose={() => setIsRegisterOpen(false)} 
+      />
+
+      {/* SuperAdminVIP VIP Panel Trigger */}
+      <SuperAdminPanel />
 
     </div>
   )
