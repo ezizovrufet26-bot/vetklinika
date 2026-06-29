@@ -22,5 +22,4 @@ export async function addVisit(patientId: string, formData: FormData) {
   })
 
   revalidatePath(`/patients/${patientId}`)
-  return { success: true }
 }
