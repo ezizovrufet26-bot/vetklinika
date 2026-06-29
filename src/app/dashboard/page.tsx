@@ -5,6 +5,7 @@ import PendingApprovalWidget from "@/components/PendingApprovalWidget";
 import VoiceSimulatorModal from "@/components/VoiceSimulatorModal";
 import { getPendingAiAppointments } from "@/app/actions/ai-receptionist";
 import DoctorHeaderProfile from "@/components/DoctorHeaderProfile";
+import ClinicSwitcher from "@/components/ClinicSwitcher";
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,10 @@ export default async function Home() {
           </div>
 
           {/* Right Doctor Profile & Status */}
-          <DoctorHeaderProfile />
+          <div className="flex flex-wrap items-center gap-3">
+            <ClinicSwitcher />
+            <DoctorHeaderProfile />
+          </div>
         </header>
 
         {/* Executive Metrics Overview Grid (Rich Stat Cards) */}
