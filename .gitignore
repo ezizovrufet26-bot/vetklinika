@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+baileys_auth_info/
+qr.png
+public/qr.png
+public/whatsapp-status.json

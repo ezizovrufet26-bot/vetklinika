@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model Owner {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String?
+  phone       String   @unique
+  whatsappJid String?
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  patients    Patient[]
+  messages    Message[]
+}
+
+model Patient {
+  id          String   @id @default(uuid())
+  chipNumber  String?  @unique // Çip və ya Barkod nömrəsi (RFID Skaner üçün)
+  name        String
+  species     String   // İt, Pişik, Quş və s.
+  breed       String?  // Cinsi
+  birthDate   DateTime?
+  weight      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String
+  owner       Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  clinicStatus ClinicStatus @default(NONE)
+
+  visits      Visit[]
+  vaccines    Vaccine[]
+  appointments Appointment[]
+  invoices    Invoice[]
+  diagnosticImages DiagnosticImage[]
+  labResults  LabResult[]
+}
+
+enum ClinicStatus {
+  NONE
+  WAITING
+  EXAMINATION
+  TREATMENT
+  DISCHARGED
+}
+
+model Visit {
+  id             String   @id @default(uuid())
+  visitDate      DateTime @default(now())
+  reason         String
+  temperature    Float?
+  weight         Float?
+  doctorNotes    String?  @db.Text // AI Scribe tərəfindən doldurula bilər
+  treatment      String?  @db.Text
+  
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Vaccine {
+  id              String   @id @default(uuid())
+  name            String
+  dateGiven       DateTime @default(now())
+  nextDueDate     DateTime // Növbəti doza (WhatsApp Xatırlatma üçün)
+  isReminderSent  Boolean  @default(false)
+  
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Appointment {
+  id          String   @id @default(uuid())
+  date        DateTime
+  reason      String
+  status      AppointmentStatus @default(PENDING)
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  isAiGenerated Boolean @default(false)
+  sourcePhone   String?
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model Invoice {
+  id          String        @id @default(uuid())
+  invoiceNo   String        @unique // QBZ-001, QBZ-002...
+  status      InvoiceStatus @default(UNPAID)
+  totalAmount Float         @default(0)
+  notes       String?       @db.Text
+
+  patientId   String
+  patient     Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  items       InvoiceItem[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  name        String   // Xidmət/məhsul adı
+  quantity    Int      @default(1)
+  unitPrice   Float
+  total       Float
+
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  PARTIAL
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  category    String   // Dərman, Xidmət, Yem, Avadanlıq
+  price       Float
+  stock       Int      @default(0)
+  minStock    Int      @default(5) // Bu rəqəmdən az olsa xəbərdarlıq
+  unit        String   @default("ədəd") // ədəd, ml, tablet, kq
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DiagnosticImage {
+  id          String   @id @default(uuid())
+  type        String   // UZI, XRAY, CT, MICROSCOPY
+  fileUrl     String
+  notes       String?  @db.Text
+  deviceName  String?  // Mindray Vetus 8, IDEXX DR30
+
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+}
+
+model LabResult {
+  id          String   @id @default(uuid())
+  deviceName  String   // Zoetis Vetscan HM5, IDEXX Catalyst
+  testType    String   // HEMATOLOGY, BIOCHEMISTRY
+  dataJson    String   @db.Text // JSON string of parameters
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id            String   @id @default(uuid())
+  text          String?  @db.Text
+  audioUrl      String?
+  isFromClinic  Boolean  @default(false)
+  isAudio       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  
+  ownerId       String
+  owner         Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
