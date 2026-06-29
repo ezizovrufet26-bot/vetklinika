@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="9" fill="#059669"/>
+  <!-- Top Paw -->
+  <circle cx="12" cy="11" r="2" fill="#F97316"/>
+  <circle cx="17" cy="10" r="2" fill="#F97316"/>
+  <circle cx="9" cy="15" r="1.8" fill="#F97316"/>
+  <circle cx="19" cy="14" r="1.8" fill="#F97316"/>
+  <path d="M14.5 14C12.5 14 11 15.5 11 17.5C11 19 12.5 20.5 14.5 20.5C16.5 20.5 18 19 18 17.5C18 15.5 16.5 14 14.5 14Z" fill="#F97316"/>
+  
+  <!-- Small Paw Offset -->
+  <circle cx="22" cy="20" r="1.2" fill="#EA580C"/>
+  <circle cx="25" cy="19.5" r="1.2" fill="#EA580C"/>
+  <circle cx="20" cy="22.5" r="1" fill="#EA580C"/>
+  <circle cx="26.5" cy="22" r="1" fill="#EA580C"/>
+  <path d="M23.5 22C22.2 22 21.2 23 21.2 24.2C21.2 25.2 22.2 26 23.5 26C24.8 26 25.8 25.2 25.8 24.2C25.8 23 24.8 22 23.5 22Z" fill="#EA580C"/>
+</svg>

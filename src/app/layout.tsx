@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: "Vet Klinika - İdarəetmə Sistemi",
   description: "Müasir Baytarlıq Klinikası İdarəetmə Sistemi (PWA)",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

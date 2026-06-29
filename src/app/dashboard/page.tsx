@@ -4,6 +4,7 @@ import KanbanBoard from "@/components/KanbanBoard";
 import PendingApprovalWidget from "@/components/PendingApprovalWidget";
 import VoiceSimulatorModal from "@/components/VoiceSimulatorModal";
 import { getPendingAiAppointments } from "@/app/actions/ai-receptionist";
+import DoctorHeaderProfile from "@/components/DoctorHeaderProfile";
 
 export const dynamic = 'force-dynamic';
 
@@ -106,19 +107,7 @@ export default async function Home() {
           </div>
 
           {/* Right Doctor Profile & Status */}
-          <div className="flex items-center gap-4 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0 w-full lg:w-auto justify-end">
-            <div className="text-right hidden sm:block">
-              <h4 className="text-xs font-black text-slate-900">Dr. Rəşad Əliyev</h4>
-              <p className="text-[10px] font-bold text-emerald-600 flex items-center justify-end gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Növbətçi Baş Həkim
-              </p>
-            </div>
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-200 to-emerald-200 p-0.5 shadow-md">
-              <div className="w-full h-full bg-slate-800 rounded-[0.9rem] flex items-center justify-center text-white font-black text-sm">
-                👨‍⚕️
-              </div>
-            </div>
-          </div>
+          <DoctorHeaderProfile />
         </header>
 
         {/* Executive Metrics Overview Grid (Rich Stat Cards) */}
