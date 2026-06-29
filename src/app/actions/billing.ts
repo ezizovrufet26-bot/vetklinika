@@ -41,8 +41,30 @@ export async function createInvoice(data: {
 }
 
 export async function updateInvoiceStatus(id: string, status: 'UNPAID' | 'PAID' | 'PARTIAL') {
-  await prisma.invoice.update({ where: { id }, data: { status } })
+  const invoice = await prisma.invoice.update({
+    where: { id },
+    data: { status },
+    include: { items: true }
+  })
+
+  // If paid, auto-deduct matching items from inventory stock
+  if (status === 'PAID' && invoice.items.length > 0) {
+    for (const item of invoice.items) {
+      const product = await prisma.product.findFirst({
+        where: { name: { contains: item.name, mode: 'insensitive' } }
+      })
+      if (product && product.stock > 0) {
+        const newStock = Math.max(0, product.stock - item.quantity)
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { stock: newStock }
+        })
+      }
+    }
+  }
+
   revalidatePath('/invoices')
+  revalidatePath('/inventory')
 }
 
 // ── Products / Inventory ──────────────────────────────────

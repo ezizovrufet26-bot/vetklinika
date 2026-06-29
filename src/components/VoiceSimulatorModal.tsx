@@ -105,9 +105,9 @@ export default function VoiceSimulatorModal() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-5 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl flex items-center gap-2 text-sm"
+        className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl shadow-md shadow-purple-600/20 transition-all hover:-translate-y-0.5 flex items-center gap-2 text-xs"
       >
-        <span className="text-xl">🎙️</span> Canlı AI Səsli Zəng
+        <span className="text-base">🎙️</span> Canlı AI Zəng
       </button>
 
       {isOpen && mounted && createPortal(

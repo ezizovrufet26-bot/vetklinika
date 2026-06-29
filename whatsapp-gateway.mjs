@@ -4,6 +4,13 @@ import pino from 'pino'
 import fs from 'fs'
 import path from 'path'
 import http from 'http'
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dxrtxojca',
+  api_key: process.env.CLOUDINARY_API_KEY || '459296421142521',
+  api_secret: process.env.CLOUDINARY_API_SECRET || '7OduzOtTDkJgr9gVmPLnL-UlLsA',
+});
 
 // Store sock globally to be accessed by http server
 let globalSock = null;
@@ -135,12 +142,25 @@ async function connectToWhatsApp() {
         isAudio = true
         try {
           const buffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }) })
-          const filename = `audio_${Date.now()}_${msg.key.id}.ogg`
-          const dir = path.join(process.cwd(), 'public', 'uploads', 'audio')
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-          fs.writeFileSync(path.join(dir, filename), buffer)
-          audioUrl = `/uploads/audio/${filename}`
-          console.log('Səs faylı yükləndi:', audioUrl)
+          
+          // Upload to Cloudinary Cloud Storage
+          try {
+            const uploadResult = await new Promise((resolve, reject) => {
+              cloudinary.uploader.upload_stream(
+                { folder: 'vet-klinika/audio', resource_type: 'video' },
+                (err, res) => err ? reject(err) : resolve(res)
+              ).end(buffer)
+            })
+            audioUrl = uploadResult.secure_url
+            console.log('☁️ Səs faylı Cloudinary-yə yükləndi:', audioUrl)
+          } catch (cloudErr) {
+            console.error('Cloudinary yükləmə xətası, yerli diskə yazılır:', cloudErr)
+            const filename = `audio_${Date.now()}_${msg.key.id}.ogg`
+            const dir = path.join(process.cwd(), 'public', 'uploads', 'audio')
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+            fs.writeFileSync(path.join(dir, filename), buffer)
+            audioUrl = `/uploads/audio/${filename}`
+          }
         } catch (e) {
           console.error('Audio download xətası:', e)
         }

@@ -119,10 +119,10 @@ export default function PendingApprovalWidget({ initialAppointments }: { initial
       {/* Sleek Header Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`relative px-5 py-3.5 rounded-2xl font-extrabold text-sm flex items-center gap-2.5 transition-all shadow-xl hover:-translate-y-1 ${
+        className={`relative px-4 py-2.5 rounded-2xl font-extrabold text-xs flex items-center gap-2 transition-all shadow-md hover:-translate-y-0.5 ${
           appointments.length > 0
             ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/30 animate-pulse'
-            : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20'
+            : 'bg-slate-50 text-slate-700 hover:bg-amber-50 hover:text-amber-800 border border-slate-200/60'
         }`}
       >
         <span className="text-xl">📞</span>
