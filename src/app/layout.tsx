@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#059669",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="az">
-      <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased`}>
+      <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased overflow-x-hidden w-full`}>
         {/* Sol Menyu (Sidebar) və Üst Menyu gələcəkdə bura əlavə ediləcək */}
         <main className="min-h-screen">
           {children}
