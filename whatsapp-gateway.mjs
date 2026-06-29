@@ -9,7 +9,7 @@ import { v2 as cloudinary } from 'cloudinary'
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dxrtxojca',
   api_key: process.env.CLOUDINARY_API_KEY || '459296421142521',
-  api_secret: process.env.CLOUDINARY_API_SECRET || '7OduzOtTDkJgr9gVmPLnL-UlLsA',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'ErJ_jGmUDh9UD7Ft6kG5T9kWKx0',
 });
 
 // Store sock globally to be accessed by http server
