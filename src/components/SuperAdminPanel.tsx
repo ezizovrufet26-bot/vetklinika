@@ -13,7 +13,25 @@ export default function SuperAdminPanel() {
   const [inputPin, setInputPin] = useState('')
   const [pinError, setPinError] = useState(false)
 
-  const loadRequests = () => {
+  const loadRequests = async () => {
+    try {
+      const res = await fetch('/api/access-requests')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((item: any) => ({
+            ...item,
+            createdAt: typeof item.createdAt === 'string' ? item.createdAt.slice(11, 16) : '12:00'
+          }))
+          setRequests(formatted)
+          localStorage.setItem('vet_access_requests', JSON.stringify(formatted))
+          return
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch from API, reading local storage:', e)
+    }
+
     const json = localStorage.getItem('vet_access_requests')
     if (json) {
       try {
@@ -39,9 +57,13 @@ export default function SuperAdminPanel() {
 
   useEffect(() => {
     loadRequests()
+    const interval = setInterval(loadRequests, 10000) // 10 saniyədən bir avto-yeniləmə
     const handleUpdate = () => loadRequests()
     window.addEventListener('accessRequestsUpdate', handleUpdate)
-    return () => window.removeEventListener('accessRequestsUpdate', handleUpdate)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('accessRequestsUpdate', handleUpdate)
+    }
   }, [])
 
   const handleOpenModal = () => {
@@ -51,6 +73,7 @@ export default function SuperAdminPanel() {
     } else {
       setIsAuthenticated(false)
     }
+    loadRequests()
     setIsOpen(true)
   }
 
@@ -61,15 +84,26 @@ export default function SuperAdminPanel() {
       sessionStorage.setItem('superadmin_authenticated', 'true')
       setPinError(false)
       setInputPin('')
+      loadRequests()
     } else {
       setPinError(true)
     }
   }
 
-  const handleApprove = (req: AccessRequest) => {
+  const handleApprove = async (req: AccessRequest) => {
     const updated = requests.map(r => r.id === req.id ? { ...r, status: 'APPROVED' as const } : r)
     setRequests(updated)
     localStorage.setItem('vet_access_requests', JSON.stringify(updated))
+
+    try {
+      await fetch('/api/access-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: req.id, status: 'APPROVED' })
+      })
+    } catch (err) {
+      console.error('API update failed:', err)
+    }
 
     const savedClinicsJson = localStorage.getItem('vet_clinics_list')
     const currentClinics = savedClinicsJson ? JSON.parse(savedClinicsJson) : []
@@ -79,10 +113,20 @@ export default function SuperAdminPanel() {
     window.dispatchEvent(new Event('clinicChange'))
   }
 
-  const handleReject = (reqId: string) => {
+  const handleReject = async (reqId: string) => {
     const updated = requests.map(r => r.id === reqId ? { ...r, status: 'REJECTED' as const } : r)
     setRequests(updated)
     localStorage.setItem('vet_access_requests', JSON.stringify(updated))
+
+    try {
+      await fetch('/api/access-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reqId, status: 'REJECTED' })
+      })
+    } catch (err) {
+      console.error('API update failed:', err)
+    }
   }
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length

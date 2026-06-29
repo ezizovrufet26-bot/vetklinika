@@ -25,28 +25,51 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!doctorName || !clinicName || !phone) return
 
-    const newReq: AccessRequest = {
-      id: 'req-' + Date.now(),
+    const newReqPayload = {
       doctorName: doctorName.trim(),
       clinicName: clinicName.trim(),
-      phone: phone.trim(),
+      phone: phone.trim()
+    }
+
+    let createdReq: AccessRequest = {
+      id: 'req-' + Date.now(),
+      doctorName: newReqPayload.doctorName,
+      clinicName: newReqPayload.clinicName,
+      phone: newReqPayload.phone,
       status: 'PENDING',
       createdAt: new Date().toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
     }
 
+    try {
+      const res = await fetch('/api/access-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReqPayload)
+      })
+      if (res.ok) {
+        const data = await res.json()
+        createdReq = {
+          ...data,
+          createdAt: typeof data.createdAt === 'string' ? data.createdAt.slice(11, 16) : createdReq.createdAt
+        }
+      }
+    } catch (err) {
+      console.error('API Error, falling back to local sync:', err)
+    }
+
     const existingJson = localStorage.getItem('vet_access_requests')
     const list: AccessRequest[] = existingJson ? JSON.parse(existingJson) : []
-    list.unshift(newReq)
+    list.unshift(createdReq)
     localStorage.setItem('vet_access_requests', JSON.stringify(list))
 
     // Notify listeners
     window.dispatchEvent(new Event('accessRequestsUpdate'))
 
-    setSubmittedRequest(newReq)
+    setSubmittedRequest(createdReq)
   }
 
   return (

@@ -183,3 +183,20 @@ model Message {
   owner         Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
+model AccessRequest {
+  id         String              @id @default(uuid())
+  doctorName String
+  clinicName String
+  phone      String
+  status     AccessRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
