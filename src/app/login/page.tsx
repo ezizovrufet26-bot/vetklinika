@@ -72,9 +72,14 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Parol
-              </label>
+              <div className="flex justify-between items-center">
+                <label htmlFor="password" className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                  Parol
+                </label>
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline font-bold transition-all">
+                  Şifrəni unutmusunuz?
+                </Link>
+              </div>
               <div className={inputWrapCls}>
                 <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input

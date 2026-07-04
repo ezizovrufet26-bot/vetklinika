@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { QrCode, Smartphone, CheckCircle, RefreshCw, XCircle, User, Award, Save, Stethoscope } from 'lucide-react'
+import { QrCode, Smartphone, CheckCircle, RefreshCw, XCircle, User, Award, Save, Stethoscope, Lock, Image, Key } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import PageHeader from '@/components/PageHeader'
 import Button from '@/components/ui/button'
+import { changePassword } from '@/app/actions/auth'
 
 const inputCls =
   'w-full px-4 py-3 bg-card border border-input rounded-xl text-sm font-bold text-foreground ' +
@@ -15,13 +16,19 @@ export default function SettingsPage() {
   const [qrKey, setQrKey] = useState(Date.now())
   const [doctorName, setDoctorName] = useState('Dr. Rəşad Əliyev')
   const [doctorTitle, setDoctorTitle] = useState('Növbətçi Baş Həkim')
+  const [doctorPhoto, setDoctorPhoto] = useState<string | null>(null)
   const [savedMsg, setSavedMsg] = useState(false)
+
+  const [passMessage, setPassMessage] = useState({ success: '', error: '' })
+  const [passLoading, setPassLoading] = useState(false)
 
   useEffect(() => {
     const savedName = localStorage.getItem('doctorName')
     const savedTitle = localStorage.getItem('doctorTitle')
+    const savedPhoto = localStorage.getItem('doctorPhoto')
     if (savedName) setDoctorName(savedName)
     if (savedTitle) setDoctorTitle(savedTitle)
+    if (savedPhoto) setDoctorPhoto(savedPhoto)
 
     const checkStatus = async () => {
       try {
@@ -43,13 +50,49 @@ export default function SettingsPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Limit file size to 1MB
+      if (file.size > 1024 * 1024) {
+        alert('Şəkil ölçüsü 1MB-dan çox ola bilməz.')
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setDoctorPhoto(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSaveDoctorProfile = (e: React.FormEvent) => {
     e.preventDefault()
     localStorage.setItem('doctorName', doctorName)
     localStorage.setItem('doctorTitle', doctorTitle)
+    if (doctorPhoto) {
+      localStorage.setItem('doctorPhoto', doctorPhoto)
+    } else {
+      localStorage.removeItem('doctorPhoto')
+    }
     window.dispatchEvent(new Event('doctorProfileUpdate'))
     setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 3000)
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setPassLoading(true)
+    setPassMessage({ success: '', error: '' })
+    const formData = new FormData(e.currentTarget)
+    const result = await changePassword(null, formData)
+    if (result.error) {
+      setPassMessage({ success: '', error: result.error })
+    } else {
+      setPassMessage({ success: result.success || 'Şifrə dəyişdirildi!', error: '' })
+      e.currentTarget.reset()
+    }
+    setPassLoading(false)
   }
 
   return (
@@ -70,41 +113,83 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-lg font-display font-extrabold">Həkim Profili</h2>
               <p className="text-xs text-muted-foreground font-medium">
-                Panelin sağ yuxarı küncündə və hesabatlarda görünəcək ad və vəzifə
+                Panelin sağ yuxarı küncündə və hesabatlarda görünəcək ad, vəzifə və şəkil
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleSaveDoctorProfile} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <User className="w-4 h-4 text-primary" /> Həkimin Adı və Soyadı
-              </label>
-              <input
-                type="text"
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-                placeholder="Məs: Dr. Əzizov Rüfət"
-                required
-                className={inputCls}
-              />
+          <form onSubmit={handleSaveDoctorProfile} className="space-y-5">
+            <div className="flex flex-col sm:flex-row gap-6 items-center bg-secondary/35 p-5 rounded-2xl border border-border">
+              <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-white text-3xl font-black overflow-hidden shadow-md border-2 border-primary/20 shrink-0">
+                {doctorPhoto ? (
+                  <img src={doctorPhoto} alt="Doctor" className="w-full h-full object-cover" />
+                ) : (
+                  '👨‍⚕️'
+                )}
+              </div>
+              <div className="space-y-2 flex-1 w-full text-center sm:text-left">
+                <label className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Image className="w-4 h-4 text-primary" /> Profil Şəkli
+                </label>
+                <div className="flex flex-wrap gap-2.5 items-center justify-center sm:justify-start">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="doctor-photo-upload"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="doctor-photo-upload"
+                    className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl cursor-pointer hover:brightness-110 shadow-soft transition-all"
+                  >
+                    Şəkil Seç
+                  </label>
+                  {doctorPhoto && (
+                    <button
+                      type="button"
+                      onClick={() => setDoctorPhoto(null)}
+                      className="px-4 py-2 bg-destructive/10 text-destructive text-xs font-bold rounded-xl hover:bg-destructive/20 transition-all"
+                    >
+                      Şəkli Sil
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Maksimum ölçü: 1MB. Kvadrat şəkillərə üstünlük verilir.</p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <Award className="w-4 h-4 text-primary" /> Vəzifə və ya İxtisas
-              </label>
-              <input
-                type="text"
-                value={doctorTitle}
-                onChange={(e) => setDoctorTitle(e.target.value)}
-                placeholder="Məs: Növbətçi Baş Həkim"
-                required
-                className={inputCls}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <User className="w-4 h-4 text-primary" /> Həkimin Adı və Soyadı
+                </label>
+                <input
+                  type="text"
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                  placeholder="Məs: Dr. Əzizov Rüfət"
+                  required
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Award className="w-4 h-4 text-primary" /> Vəzifə və ya İxtisas
+                </label>
+                <input
+                  type="text"
+                  value={doctorTitle}
+                  onChange={(e) => setDoctorTitle(e.target.value)}
+                  placeholder="Məs: Növbətçi Baş Həkim"
+                  required
+                  className={inputCls}
+                />
+              </div>
             </div>
 
-            <div className="md:col-span-2 flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-2">
               {savedMsg ? (
                 <span className="text-xs font-extrabold text-success bg-success/10 border border-success/25 px-4 py-2.5 rounded-xl flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" /> Profil uğurla yeniləndi!
@@ -114,6 +199,81 @@ export default function SettingsPage() {
               )}
               <Button type="submit" size="sm">
                 <Save className="w-4 h-4" /> Profili Yadda Saxla
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Şifrənin Dəyişdirilməsi */}
+        <div className="bg-card p-6 sm:p-8 rounded-2xl shadow-soft border border-border space-y-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-glow">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-display font-extrabold">Şifrəni Dəyişdir</h2>
+              <p className="text-xs text-muted-foreground font-medium">
+                Giriş təhlükəsizliyi üçün şifrənizi mütəmadi olaraq yeniləyin
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            {passMessage.error && (
+              <div className="p-4 bg-destructive/10 text-destructive text-sm font-bold rounded-xl border border-destructive/25 flex items-center gap-2">
+                <XCircle className="w-4.5 h-4.5" /> {passMessage.error}
+              </div>
+            )}
+            {passMessage.success && (
+              <div className="p-4 bg-success/10 text-success text-sm font-bold rounded-xl border border-success/25 flex items-center gap-2">
+                <CheckCircle className="w-4.5 h-4.5" /> {passMessage.success}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Lock className="w-4 h-4 text-primary" /> Cari Şifrə
+                </label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  required
+                  placeholder="••••••••"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Lock className="w-4 h-4 text-primary" /> Yeni Şifrə
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  required
+                  placeholder="••••••••"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <Lock className="w-4 h-4 text-primary" /> Yeni Şifrə (Təkrar)
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  placeholder="••••••••"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" size="sm" disabled={passLoading}>
+                {passLoading ? 'Yenilənir...' : 'Şifrəni Yenilə'}
               </Button>
             </div>
           </form>
