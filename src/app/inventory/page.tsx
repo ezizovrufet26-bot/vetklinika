@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { createProduct } from '@/app/actions/billing'
+import { AlertTriangle, Pill, HeartHandshake, Beef, Package } from 'lucide-react'
+import AppShell from '@/components/AppShell'
+import PageHeader from '@/components/PageHeader'
+import Badge from '@/components/ui/badge'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +29,13 @@ async function ensureSeedProducts() {
   }
 }
 
+const CategoryIcon = ({ cat, className }: { cat: string; className?: string }) => {
+  if (cat === 'Xidmət') return <HeartHandshake className={className} />
+  if (cat === 'Dərman') return <Pill className={className} />
+  if (cat === 'Yem') return <Beef className={className} />
+  return <Package className={className} />
+}
+
 export default async function InventoryPage() {
   await ensureSeedProducts()
   const products = await prisma.product.findMany({ orderBy: { category: 'asc' } })
@@ -35,90 +44,96 @@ export default async function InventoryPage() {
   const categories = [...new Set(products.map(p => p.category))]
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[320px] bg-gradient-to-br from-amber-800 via-orange-900 to-red-900 rounded-b-[4rem] -z-10 shadow-2xl overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_100%_0%,_white_0%,_transparent_50%)]"></div>
-      </div>
-
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
-          <div className="text-white">
-            <div className="flex items-center gap-4 mb-2">
-              <Link href="/" className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-colors">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-              </Link>
-              <h1 className="text-4xl font-black tracking-tight drop-shadow-lg">
-                Anbar & <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-orange-200">İnventar</span>
-              </h1>
-            </div>
-            <p className="text-amber-100/80 text-sm font-medium tracking-wide ml-14">EzyVet rəqibi səviyyəsində stok idarəetməsi</p>
-          </div>
-          <div className="flex gap-4">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-5 py-3 rounded-2xl text-center shadow-xl">
-              <p className="text-amber-200/80 text-xs font-bold uppercase tracking-wider">Məhsul</p>
-              <p className="text-2xl font-black text-white">{products.length}</p>
+    <AppShell>
+      <PageHeader
+        title="Anbar &"
+        highlight="İnventar"
+        subtitle="Dərman, xidmət və yem stoku — kritik həddə düşəndə avtomatik xəbərdarlıq"
+        actions={
+          <>
+            <div className="bg-card border border-border px-5 py-2.5 rounded-xl text-center shadow-soft">
+              <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-wider">Məhsul</p>
+              <p className="text-xl font-display font-extrabold">{products.length}</p>
             </div>
             {lowStock.length > 0 && (
-              <div className="bg-red-500/30 backdrop-blur-md border border-red-500/40 px-5 py-3 rounded-2xl text-center shadow-xl animate-pulse">
-                <p className="text-red-200/80 text-xs font-bold uppercase tracking-wider">⚠️ Az Stok</p>
-                <p className="text-2xl font-black text-red-300">{lowStock.length}</p>
+              <div className="bg-destructive/10 border border-destructive/25 px-5 py-2.5 rounded-xl text-center shadow-soft animate-pulse-subtle">
+                <p className="text-destructive text-[10px] font-extrabold uppercase tracking-wider">Az Stok</p>
+                <p className="text-xl font-display font-extrabold text-destructive">{lowStock.length}</p>
               </div>
             )}
-          </div>
-        </header>
+          </>
+        }
+      />
 
-        {/* Low Stock Alert */}
-        {lowStock.length > 0 && (
-          <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-2xl p-5 flex items-start gap-4">
-            <div className="text-3xl">⚠️</div>
-            <div>
-              <p className="font-black text-red-800 text-lg">Kritik Stok Xəbərdarlığı!</p>
-              <p className="text-red-600 text-sm mt-1">Bu məhsulların stoku azalıb: <b>{lowStock.map(p => p.name).join(', ')}</b></p>
-            </div>
+      {/* Kritik stok xəbərdarlığı */}
+      {lowStock.length > 0 && (
+        <div className="mb-8 bg-destructive/5 border border-destructive/25 rounded-2xl p-5 flex items-start gap-4">
+          <span className="w-11 h-11 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </span>
+          <div>
+            <p className="font-display font-extrabold text-destructive">Kritik Stok Xəbərdarlığı</p>
+            <p className="text-sm text-muted-foreground font-medium mt-1">
+              Bu məhsulların stoku azalıb: <b className="text-foreground">{lowStock.map(p => p.name).join(', ')}</b>
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Products by Category */}
-        {categories.map(cat => (
-          <div key={cat} className="mb-6">
-            <h2 className="text-lg font-black text-slate-700 mb-3 flex items-center gap-2">
-              {cat === 'Xidmət' ? '🏥' : cat === 'Dərman' ? '💊' : cat === 'Yem' ? '🍖' : '🔧'} {cat}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {products.filter(p => p.category === cat).map(product => {
-                const isLow = product.stock <= product.minStock && product.minStock > 0
-                return (
-                  <div key={product.id} className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all p-5 ${isLow ? 'border-red-200 bg-red-50/30' : 'border-slate-100'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-bold text-slate-800 text-sm leading-tight">{product.name}</h3>
-                      {isLow && <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg font-bold">AZ!</span>}
-                    </div>
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <p className="text-2xl font-black text-slate-800">{product.price} <span className="text-sm font-normal text-slate-500">₼</span></p>
-                        <p className={`text-sm font-semibold mt-1 ${isLow ? 'text-red-600' : 'text-emerald-600'}`}>
-                          {product.stock} {product.unit} qalıb
-                        </p>
-                      </div>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${isLow ? 'bg-red-100' : 'bg-slate-100'}`}>
-                        {cat === 'Xidmət' ? '🏥' : cat === 'Dərman' ? '💊' : cat === 'Yem' ? '🍖' : '📦'}
-                      </div>
-                    </div>
-                    {product.minStock > 0 && (
-                      <div className="mt-3">
-                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                          <div className={`h-1.5 rounded-full transition-all ${isLow ? 'bg-red-500' : 'bg-emerald-500'}`}
-                            style={{ width: `${Math.min(100, (product.stock / (product.minStock * 4)) * 100)}%` }}></div>
-                        </div>
-                      </div>
-                    )}
+      {/* Kateqoriyalar üzrə məhsullar */}
+      {categories.map(cat => (
+        <div key={cat} className="mb-8">
+          <h2 className="text-lg font-display font-extrabold mb-3 flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
+              <CategoryIcon cat={cat} className="w-4 h-4" />
+            </span>
+            {cat}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {products.filter(p => p.category === cat).map(product => {
+              const isLow = product.stock <= product.minStock && product.minStock > 0
+              return (
+                <div
+                  key={product.id}
+                  className={`bg-card rounded-2xl border shadow-soft hover:shadow-premium transition-shadow p-5 ${
+                    isLow ? 'border-destructive/30' : 'border-border'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <h3 className="font-bold text-sm leading-tight">{product.name}</h3>
+                    {isLow && <Badge tone="destructive">AZ!</Badge>}
                   </div>
-                )
-              })}
-            </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-2xl font-display font-extrabold">
+                        {product.price} <span className="text-sm font-medium text-muted-foreground">₼</span>
+                      </p>
+                      <p className={`text-sm font-semibold mt-1 ${isLow ? 'text-destructive' : 'text-success'}`}>
+                        {product.stock} {product.unit} qalıb
+                      </p>
+                    </div>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                      isLow ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'
+                    }`}>
+                      <CategoryIcon cat={cat} className="w-5 h-5" />
+                    </div>
+                  </div>
+                  {product.minStock > 0 && (
+                    <div className="mt-3.5">
+                      <div className="w-full bg-secondary rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-primary'}`}
+                          style={{ width: `${Math.min(100, (product.stock / (product.minStock * 4)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        ))}
-      </main>
-    </div>
+        </div>
+      ))}
+    </AppShell>
   )
 }
