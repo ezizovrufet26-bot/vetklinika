@@ -177,7 +177,10 @@ async function connectToWhatsApp() {
       console.log(`\n📥 GƏLƏN REAL MESAJ [${cleanPhone} (JID: ${baseJid})]: "${text}"`)
 
       // Localhook / Next.js Webhook-a göndər
-      const response = await fetch('http://localhost:3000/api/whatsapp/webhook', {
+      const appUrl = process.env.APP_URL || 'http://localhost:3000'
+      const webhookUrl = `${appUrl}/api/whatsapp/webhook`
+      console.log(`[GATEWAY] Forwarding webhook to: ${webhookUrl}`)
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleanPhone, whatsappJid: baseJid, message: text, audioUrl, isAudio })
