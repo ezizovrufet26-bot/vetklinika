@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import ThemeToggle from '@/components/ui/theme-toggle'
 import Button from '@/components/ui/button'
 import UserMenu from '@/components/UserMenu'
+import SuperAdminPanel from '@/components/SuperAdminPanel'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'İdarə Paneli', icon: LayoutDashboard },
@@ -171,6 +172,7 @@ export default function AppShell({
         </header>
 
         <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1600px] mx-auto">{children}</main>
+        <SuperAdminPanel />
       </div>
     </div>
   )
