@@ -4,23 +4,39 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 // TƏHLÜKƏSİZLİK: connection string YALNIZ env-dən gəlir.
 // Kodda hardcoded parol saxlamaq — DB-nin tam ifşası deməkdir.
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
-  throw new Error(
-    'DATABASE_URL mühit dəyişəni təyin edilməyib. .env faylına DATABASE_URL əlavə edin.'
-  )
-}
+//
+// LAZY İNİT: instansiya ilk sorğuda yaradılır ki, `next build`
+// (page data collection) DATABASE_URL olmadan da keçsin — env yalnız
+// runtime-da tələb olunur. Vercel kimi platformalarda build mühitində
+// env olmaya bilər.
 
 // Dev-də hot-reload zamanı yeni connection pool yaranmasın deyə
 // instansiyanı globalThis-də saxlayırıq
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
-function createClient() {
+function getPrisma(): PrismaClient {
+  if (globalForPrisma.prisma) return globalForPrisma.prisma
+
+  const connectionString = process.env.DATABASE_URL
+  if (!connectionString) {
+    throw new Error(
+      'DATABASE_URL mühit dəyişəni təyin edilməyib. Lokalda .env faylına, ' +
+        'deploy mühitində (Vercel/Railway) isə Environment Variables bölməsinə əlavə edin.'
+    )
+  }
+
   const pool = new Pool({ connectionString })
   const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
+  const client = new PrismaClient({ adapter })
+
+  globalForPrisma.prisma = client
+  return client
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrisma()
+    const value = Reflect.get(client, prop)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})
