@@ -1,0 +1,38 @@
+name: build-check
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee -a ci-build.log
+
+      - name: Build (Vercel-equivalent, no env vars)
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee -a ci-build.log
+
+      - name: Report failure as issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tail -n 100 ci-build.log > tail.log || true
+          BODY="$(printf 'Linux build failed for %s\n\n```\n%s\n```' "$GITHUB_SHA" "$(cat tail.log)")"
+          gh issue create --title "CI build failure ($GITHUB_RUN_ID)" --body "$BODY" || true
