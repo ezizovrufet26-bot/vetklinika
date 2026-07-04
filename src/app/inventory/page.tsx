@@ -4,6 +4,8 @@ import AppShell from '@/components/AppShell'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/ui/badge'
 
+import InventoryManagerModal from '@/components/InventoryManagerModal'
+
 export const dynamic = 'force-dynamic'
 
 // Seed default products if none exist
@@ -50,7 +52,8 @@ export default async function InventoryPage() {
         highlight="İnventar"
         subtitle="Dərman, xidmət və yem stoku — kritik həddə düşəndə avtomatik xəbərdarlıq"
         actions={
-          <>
+          <div className="flex items-center gap-4">
+            <InventoryManagerModal />
             <div className="bg-card border border-border px-5 py-2.5 rounded-xl text-center shadow-soft">
               <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-wider">Məhsul</p>
               <p className="text-xl font-display font-extrabold">{products.length}</p>
@@ -61,7 +64,7 @@ export default async function InventoryPage() {
                 <p className="text-xl font-display font-extrabold text-destructive">{lowStock.length}</p>
               </div>
             )}
-          </>
+          </div>
         }
       />
 

@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import DiagnosticViewer from '@/components/DiagnosticViewer'
 import LabResultsTable from '@/components/LabResultsTable'
 import DeviceIntegrationSimulator from '@/components/DeviceIntegrationSimulator'
+import ManualLabResultModal from '@/components/ManualLabResultModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,8 @@ export default async function LaboratoryPage() {
         highlight="Laboratoriya & Diaqnostika"
         subtitle="Aparat inteqrasiya mərkəzi — Mindray Vetus UZİ, Zoetis Vetscan, IDEXX DR30"
         actions={
-          <>
+          <div className="flex items-center gap-4">
+            <ManualLabResultModal patients={patients as any} />
             <div className="bg-card border border-border px-5 py-2.5 rounded-xl text-center shadow-soft">
               <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-wider">DICOM İmicinq</p>
               <p className="text-xl font-display font-extrabold">{images.length}</p>
@@ -43,7 +45,7 @@ export default async function LaboratoryPage() {
               <p className="text-muted-foreground text-[10px] font-extrabold uppercase tracking-wider">Qan & Biokimya</p>
               <p className="text-xl font-display font-extrabold">{labResults.length}</p>
             </div>
-          </>
+          </div>
         }
       />
 

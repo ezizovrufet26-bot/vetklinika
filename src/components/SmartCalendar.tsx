@@ -6,7 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import azLocale from '@fullcalendar/core/locales/az'
-import { createAppointment, updateAppointmentStatus } from '@/app/actions/calendar'
+import { createAppointment, updateAppointmentStatus, rescheduleAppointment } from '@/app/actions/calendar'
 
 export default function SmartCalendar({ initialEvents, patients }: { initialEvents: any[], patients: any[] }) {
   const calendarRef = useRef<FullCalendar>(null)
@@ -72,6 +72,14 @@ export default function SmartCalendar({ initialEvents, patients }: { initialEven
     }
   }
 
+  const handleEventDrop = async (arg: any) => {
+    if (window.confirm('Randevunun vaxtını dəyişdirməyə əminsiniz?')) {
+      await rescheduleAppointment(arg.event.id, arg.event.start)
+    } else {
+      arg.revert()
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -114,6 +122,8 @@ export default function SmartCalendar({ initialEvents, patients }: { initialEven
           initialView="timeGridWeek"
           headerToolbar={false}
           events={events}
+          editable={true}
+          eventDrop={handleEventDrop}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
           height="700px"

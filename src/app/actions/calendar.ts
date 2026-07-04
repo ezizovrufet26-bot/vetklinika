@@ -59,6 +59,37 @@ export async function updateAppointmentStatus(id: string, status: 'PENDING' | 'A
   }
 
   revalidatePath('/dashboard/communications')
+  revalidatePath('/dashboard/communications')
+  revalidatePath('/calendar')
+}
+
+export async function rescheduleAppointment(id: string, newDate: Date) {
+  const appointment = await prisma.appointment.update({
+    where: { id },
+    data: { date: newDate },
+    include: { patient: { include: { owner: true } } }
+  })
+
+  // If it's already approved, we should probably notify the owner about the change.
+  if (appointment.status === 'APPROVED' && appointment.patient.owner.phone) {
+    const { patient, date } = appointment
+    const formattedDate = new Date(date).toLocaleString('az-AZ', {
+      day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit'
+    })
+    const message = `Salam ${patient.owner.firstName}!\n\n🐾 ${patient.name} üçün randevu vaxtınız *dəyişdirildi*.\n📅 Yeni Vaxt: ${formattedDate}\n\nSizi VetKlinika-da gözləyirik! 🏥`
+    
+    const recipientId = patient.owner.whatsappJid || patient.owner.phone
+    await sendWhatsAppMessage(recipientId, message)
+
+    await prisma.message.create({
+      data: {
+        text: message,
+        isFromClinic: true,
+        ownerId: patient.owner.id
+      }
+    })
+  }
+
   revalidatePath('/calendar')
 }
 
