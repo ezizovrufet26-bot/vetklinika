@@ -1,11 +1,12 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Stethoscope, Mail, Lock, LogIn, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react'
 import { login, type LoginState } from '@/app/actions/auth'
 import ThemeToggle from '@/components/ui/theme-toggle'
+import RegisterRequestModal from '@/components/RegisterRequestModal'
 
 const inputWrapCls =
   'flex items-center gap-3 bg-secondary/60 border border-input rounded-xl px-4 ' +
@@ -13,6 +14,7 @@ const inputWrapCls =
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {})
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background bg-aurora relative flex items-center justify-center px-4 py-12">
@@ -125,11 +127,13 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-muted-foreground font-semibold mt-6">
           Hesabınız yoxdur?{' '}
-          <Link href="/" className="text-primary hover:underline font-bold">
+          <button onClick={() => setIsRegisterOpen(true)} className="text-primary hover:underline font-bold transition-all">
             Qeydiyyat üçün müraciət göndərin
-          </Link>
+          </button>
         </p>
       </motion.div>
+
+      <RegisterRequestModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
     </div>
   )
 }
