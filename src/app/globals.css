@@ -1,54 +1,228 @@
 @import "tailwindcss";
 
+/* Dark rejim class-əsaslı işləyir: <html class="dark"> */
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   VetKlinika Design Tokens — HSL əsaslı, Dark/Light dəstəkli
+   Bütün rənglər BURADAN idarə olunur. Komponentlərdə hardcoded
+   rəng istifadə etmə — semantic token istifadə et.
+   ============================================================ */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Səthlər */
+  --background: hsl(40 30% 98%);
+  --foreground: hsl(200 40% 10%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(200 40% 10%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(200 40% 10%);
+
+  /* Brend */
+  --primary: hsl(161 84% 27%);
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-soft: hsl(160 60% 95%);
+  --accent: hsl(174 70% 34%);
+  --accent-foreground: hsl(0 0% 100%);
+
+  /* Neytral */
+  --secondary: hsl(200 20% 95%);
+  --secondary-foreground: hsl(200 30% 20%);
+  --muted: hsl(200 20% 94%);
+  --muted-foreground: hsl(200 15% 42%);
+  --border: hsl(200 20% 89%);
+  --input: hsl(200 20% 89%);
+  --ring: hsl(161 84% 32%);
+
+  /* Status */
+  --success: hsl(152 70% 34%);
+  --warning: hsl(38 92% 44%);
+  --destructive: hsl(0 72% 46%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --info: hsl(211 90% 46%);
+
+  /* Glassmorphism */
+  --glass: hsla(0 0% 100% / 0.72);
+  --glass-border: hsla(200 30% 50% / 0.14);
+
+  /* Kölgələr — göz yormayan, çoxqatlı */
+  --shadow-soft: 0 1px 2px hsla(200 40% 10% / 0.04), 0 4px 16px hsla(200 40% 10% / 0.06);
+  --shadow-premium: 0 1px 2px hsla(200 40% 10% / 0.05), 0 8px 32px hsla(161 60% 20% / 0.08);
+  --shadow-glow: 0 0 0 1px hsla(161 84% 32% / 0.12), 0 8px 40px hsla(161 84% 32% / 0.18);
+
+  --radius: 1rem;
+}
+
+.dark {
+  --background: hsl(202 36% 6%);
+  --foreground: hsl(200 25% 93%);
+  --card: hsl(202 30% 9%);
+  --card-foreground: hsl(200 25% 93%);
+  --popover: hsl(202 30% 10%);
+  --popover-foreground: hsl(200 25% 93%);
+
+  --primary: hsl(160 74% 42%);
+  --primary-foreground: hsl(202 36% 6%);
+  --primary-soft: hsl(161 50% 13%);
+  --accent: hsl(174 65% 45%);
+  --accent-foreground: hsl(202 36% 6%);
+
+  --secondary: hsl(202 25% 13%);
+  --secondary-foreground: hsl(200 20% 85%);
+  --muted: hsl(202 25% 13%);
+  --muted-foreground: hsl(200 15% 60%);
+  --border: hsl(202 25% 16%);
+  --input: hsl(202 25% 18%);
+  --ring: hsl(160 74% 45%);
+
+  --success: hsl(152 60% 45%);
+  --warning: hsl(38 92% 55%);
+  --destructive: hsl(0 68% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --info: hsl(211 90% 60%);
+
+  --glass: hsla(202 30% 10% / 0.72);
+  --glass-border: hsla(200 40% 80% / 0.08);
+
+  --shadow-soft: 0 1px 2px hsla(0 0% 0% / 0.3), 0 4px 16px hsla(0 0% 0% / 0.35);
+  --shadow-premium: 0 1px 2px hsla(0 0% 0% / 0.35), 0 8px 32px hsla(0 0% 0% / 0.45);
+  --shadow-glow: 0 0 0 1px hsla(160 74% 45% / 0.2), 0 8px 40px hsla(160 74% 45% / 0.15);
+}
+
+/* Tailwind v4 theme mapping — bg-background, text-primary və s. işləsin */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-inter), ui-sans-serif, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 0.5rem);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+  --radius-2xl: calc(var(--radius) + 1rem);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-premium: var(--shadow-premium);
+  --shadow-glow: var(--shadow-glow);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Rejim keçidində rənglərin yumşaq dəyişməsi */
+html.theme-transition,
+html.theme-transition * {
+  transition: background-color 0.35s ease, border-color 0.35s ease, color 0.2s ease;
 }
 
 /* Custom Smooth Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
 }
 
-/* Glassmorphism Utilities */
+/* ================= Premium Utilities ================= */
+
 .glass-panel {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--glass-border);
 }
 
-.glass-dark {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.shadow-soft { box-shadow: var(--shadow-soft); }
+.shadow-premium { box-shadow: var(--shadow-premium); }
+.shadow-glow { box-shadow: var(--shadow-glow); }
+
+/* Gradient mətn — hero başlıqları üçün */
+.text-gradient {
+  background: linear-gradient(120deg, hsl(161 84% 32%), hsl(174 70% 38%), hsl(190 80% 42%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .text-gradient {
+  background: linear-gradient(120deg, hsl(160 74% 52%), hsl(174 65% 55%), hsl(190 80% 60%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* Custom Glow Animations */
+/* Cinematic grid fonu — landing hero */
+.bg-grid {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--border) 60%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 60%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+/* Aurora / mesh işıqlandırma */
+.bg-aurora {
+  background:
+    radial-gradient(600px circle at 15% 20%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%),
+    radial-gradient(700px circle at 85% 10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(500px circle at 60% 90%, color-mix(in srgb, var(--info) 8%, transparent), transparent 60%);
+}
+
 @keyframes pulse-subtle {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.02); opacity: 0.95; }
 }
+.animate-pulse-subtle { animation: pulse-subtle 3s infinite ease-in-out; }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s infinite ease-in-out;
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
+.animate-float-slow { animation: float-slow 7s infinite ease-in-out; }
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }

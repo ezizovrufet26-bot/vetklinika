@@ -1,12 +1,27 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
+import ThemeProvider, { THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-outfit",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Vet Klinika - İdarəetmə Sistemi",
-  description: "Müasir Baytarlıq Klinikası İdarəetmə Sistemi (PWA)",
+  title: {
+    default: "VetKlinika — Baytarlıq Klinikası üçün AI Əməliyyat Sistemi",
+    template: "%s | VetKlinika",
+  },
+  description:
+    "AI səsli resepşn, WhatsApp avtomatlaşdırması, UZİ/Lab cihaz inteqrasiyası və ağıllı təqvim — baytarlıq klinikanızı bir platformada idarə edin.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
@@ -18,8 +33,10 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#059669",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#047857" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a1214" },
+  ],
 };
 
 export default function RootLayout({
@@ -28,12 +45,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="az">
-      <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased overflow-x-hidden w-full`}>
-        {/* Sol Menyu (Sidebar) və Üst Menyu gələcəkdə bura əlavə ediləcək */}
-        <main className="min-h-screen">
-          {children}
-        </main>
+    <html lang="az" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body
+        className={`${inter.variable} ${outfit.variable} font-sans bg-background text-foreground antialiased overflow-x-hidden w-full`}
+      >
+        <ThemeProvider>
+          <main className="min-h-screen">{children}</main>
+        </ThemeProvider>
       </body>
     </html>
   );
