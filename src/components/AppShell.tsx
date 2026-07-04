@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils'
 import ThemeToggle from '@/components/ui/theme-toggle'
 import Button from '@/components/ui/button'
+import UserMenu from '@/components/UserMenu'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'İdarə Paneli', icon: LayoutDashboard },
@@ -164,6 +165,7 @@ export default function AppShell({
             <div className="flex items-center gap-3">
               {headerActions}
               <ThemeToggle />
+              <UserMenu />
             </div>
           </div>
         </header>

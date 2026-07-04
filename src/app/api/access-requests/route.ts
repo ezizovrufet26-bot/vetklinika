@@ -1,9 +1,24 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+
+/** GET/PATCH yalnız SUPERADMIN/ADMIN üçün; POST landing formasından ictimaidir */
+async function requireAdmin() {
+  const session = await getSession()
+  if (!session || (session.role !== 'SUPERADMIN' && session.role !== 'ADMIN')) {
+    return null
+  }
+  return session
+}
 
 export async function GET() {
+  const session = await requireAdmin()
+  if (!session) {
+    return NextResponse.json({ error: 'Bu əməliyyat üçün admin girişi tələb olunur' }, { status: 403 })
+  }
+
   try {
-    const requests = await (prisma as any).accessRequest.findMany({
+    const requests = await prisma.accessRequest.findMany({
       orderBy: { createdAt: 'desc' }
     })
     return NextResponse.json(requests)
@@ -22,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Bütün xanaları doldurun' }, { status: 400 })
     }
 
-    const newRequest = await (prisma as any).accessRequest.create({
+    const newRequest = await prisma.accessRequest.create({
       data: {
         doctorName: doctorName.trim(),
         clinicName: clinicName.trim(),
@@ -39,6 +54,11 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const session = await requireAdmin()
+  if (!session) {
+    return NextResponse.json({ error: 'Bu əməliyyat üçün admin girişi tələb olunur' }, { status: 403 })
+  }
+
   try {
     const body = await request.json()
     const { id, status } = body
@@ -47,7 +67,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'ID və status tələb olunur' }, { status: 400 })
     }
 
-    const updated = await (prisma as any).accessRequest.update({
+    const updated = await prisma.accessRequest.update({
       where: { id },
       data: { status }
     })

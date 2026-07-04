@@ -111,7 +111,7 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-2.5">
           <ThemeToggle className="h-10 w-10" />
-          <Link href="/dashboard" className="hidden sm:block font-bold text-sm text-muted-foreground hover:text-primary transition-colors px-2">
+          <Link href="/login" className="hidden sm:block font-bold text-sm text-muted-foreground hover:text-primary transition-colors px-2">
             Sistemə Giriş
           </Link>
           <Button size="sm" onClick={() => setIsRegisterOpen(true)}>
@@ -438,7 +438,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-5 text-xs font-bold text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">İmkanlar</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Qiymətlər</a>
-            <Link href="/dashboard" className="hover:text-primary transition-colors">Giriş</Link>
+            <Link href="/login" className="hover:text-primary transition-colors">Giriş</Link>
           </div>
         </div>
       </footer>
