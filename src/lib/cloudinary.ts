@@ -1,9 +1,10 @@
 import { v2 as cloudinary } from 'cloudinary';
 
+// TƏHLÜKƏSİZLİK: açarlar YALNIZ env-dən gəlir — kodda fallback secret olmaz.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dxrtxojca',
-  api_key: process.env.CLOUDINARY_API_KEY || '459296421142521',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'ErJ_jGmUDh9UD7Ft6kG5T9kWKx0',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 /**
