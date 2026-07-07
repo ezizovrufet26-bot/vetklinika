@@ -46,3 +46,6 @@ qr.png
 public/qr.png
 public/whatsapp-status.json
 .agents/
+
+# istifadəçi yükləmələri (müştəri məlumatı — repoya düşməməlidir)
+public/uploads/
