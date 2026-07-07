@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VetKlinika
 
-## Getting Started
+Baytarlıq klinikası idarəetmə sistemi: xəstə qeydiyyatı, təqvim, hesab-faktura,
+anbar, laboratoriya, analitika və WhatsApp AI Resepşn — hamısı bir yerdə.
 
-First, run the development server:
+**Stack:** Next.js 16 · React 19 · Tailwind v4 · Prisma 7 · Supabase (PostgreSQL) ·
+Cloudinary (media) · Baileys (WhatsApp) · Vercel (app) + Railway (WhatsApp gateway)
+
+## Yerli quraşdırma
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install          # asılılıqlar + prisma generate (postinstall)
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env` faylı (repoya heç vaxt commit edilmir):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL=postgresql://...   # Supabase pooler connection string
+AUTH_SECRET=...                 # sessiya JWT imza açarı (uzun random string)
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+APP_URL=https://...             # WhatsApp gateway-in webhook hədəfi
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`AUTH_SECRET` yoxdursa sessiya açarı `DATABASE_URL`-dən törədilir — işləyir,
+amma DB parolu rotasiya olunanda bütün girişlər sıfırlanır. Ayrıca açar təyin edin.
 
-## Learn More
+## Verilənlər bazası
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx prisma db push                 # sxemi Supabase-ə tətbiq et
+npx prisma studio                  # verilənlərə baxış
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+İlk SUPERADMIN hesabı (parol heç vaxt kodda/repoda saxlanmır):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+SEED_NAME="Ad Soyad" SEED_EMAIL="siz@example.com" \
+SEED_PHONE="+994xxxxxxxxx" SEED_PASSWORD="..." \
+node scripts/seed-superadmin.mjs
+```
 
-## Deploy on Vercel
+## Auth arxitekturası
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- HttpOnly cookie içində HS256 JWT (`src/lib/auth.ts`, edge-safe)
+- Marşrut qoruması `src/middleware.ts`-də: `/` və `/login` ictimai,
+  `/api/whatsapp/*` və `/api/cron/*` xarici servislər üçün açıq, qalan hər şey sessiya tələb edir
+- Rollar: `SUPERADMIN` → `ADMIN` → `DOCTOR` → `STAFF`
+- Giriş email və ya telefon (+994 normallaşdırılır) + parol ilə
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## WhatsApp gateway
+
+Railway-də ayrıca uzunmüddətli proses kimi işləyir:
+
+```bash
+node whatsapp-gateway.mjs   # Baileys sessiyası baileys_auth_info/-da (gitignored)
+```
+
+- İlk işə salmada terminala QR kod çıxır — WhatsApp-dan skan edin
+- Gələn mesajları `APP_URL/api/whatsapp/webhook`-a ötürür
+- Deploy konfiqi: `railway.json` + `nixpacks.toml` (Node 22)
+
+## Deploy
+
+- **App (Vercel):** `master` branch-inə push → avtomatik build.
+  Build `DATABASE_URL`-siz də keçir (lazy Prisma init), amma runtime üçün
+  yuxarıdakı env dəyişənləri Vercel-də təyin olunmalıdır.
+- **Gateway (Railway):** eyni repo, `node whatsapp-gateway.mjs` start əmri ilə.
+- **CI:** `.github/workflows/build-check.yml` hər push-da Linux build yoxlayır,
+  uğursuzluqda avtomatik issue açır.
+
+## Qovluq xəritəsi
+
+```
+src/app/            # Next.js App Router səhifələri
+  actions/          # server actions (auth, calendar, communications, ...)
+  api/              # webhook, cron, realtime endpoint-lər
+src/components/     # AppShell + UI kit (button, card, badge, stat-card, motion)
+src/lib/            # auth.ts (JWT), session.ts, prisma client
+prisma/             # schema (14 model: Clinic, User, Patient, Visit, Invoice, ...)
+scripts/            # seed-superadmin.mjs və s.
+whatsapp-gateway.mjs # Railway-də işləyən Baileys prosesi
+```
+
+## Qeydlər
+
+- `public/uploads/` gitignored-dur — istifadəçi məlumatı repoya düşməməlidir
+- SKILL/agent qovluğu `.agents/` da gitignored-dur
