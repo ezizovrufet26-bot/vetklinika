@@ -154,12 +154,9 @@ async function connectToWhatsApp() {
             audioUrl = uploadResult.secure_url
             console.log('☁️ Səs faylı Cloudinary-yə yükləndi:', audioUrl)
           } catch (cloudErr) {
-            console.error('Cloudinary yükləmə xətası, yerli diskə yazılır:', cloudErr)
-            const filename = `audio_${Date.now()}_${msg.key.id}.ogg`
-            const dir = path.join(process.cwd(), 'public', 'uploads', 'audio')
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-            fs.writeFileSync(path.join(dir, filename), buffer)
-            audioUrl = `/uploads/audio/${filename}`
+            console.error('Cloudinary yükləmə xətası, səs mesajı endirilə bilmədi:', cloudErr)
+            // Removed local disk fallback due to Vercel/Railway ephemeral storage constraints
+            audioUrl = null
           }
         } catch (e) {
           console.error('Audio download xətası:', e)

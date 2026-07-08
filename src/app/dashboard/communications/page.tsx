@@ -5,12 +5,15 @@ import { useSearchParams } from 'next/navigation'
 import { getOmnichannelData, sendManualReply } from '@/app/actions/communications'
 import { Phone, User, Send, Paperclip, CheckCheck, Clock, Mic, Calendar as CalendarIcon, FileText, CheckCircle, XCircle } from 'lucide-react'
 import { updateAppointmentStatus, rescheduleAndApproveAppointment } from '@/app/actions/calendar'
+import AppShell from '@/components/AppShell'
 
 export default function CommunicationsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500">Yüklənir...</div>}>
-      <CommunicationsContent />
-    </Suspense>
+    <AppShell>
+      <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Yüklənir...</div>}>
+        <CommunicationsContent />
+      </Suspense>
+    </AppShell>
   )
 }
 
@@ -93,15 +96,15 @@ function CommunicationsContent() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-zinc-500">Yüklənir...</div>
+    return <div className="p-8 text-center text-muted-foreground flex items-center justify-center h-full"><span className="animate-spin mr-2">🌀</span> Yüklənir...</div>
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-6">
+    <div className="flex h-[calc(100vh-10rem)] gap-6">
       {/* Sol Panel: Kontaktlar */}
-      <div className="w-1/3 flex flex-col border-none shadow-sm bg-white overflow-hidden rounded-3xl">
-        <div className="p-6 border-b border-zinc-100 bg-zinc-50/50">
-          <h2 className="text-xl font-medium tracking-tight text-zinc-800">Söhbətlər</h2>
+      <div className="w-1/3 flex flex-col bg-card border border-border shadow-sm overflow-hidden rounded-3xl glass-panel">
+        <div className="p-6 border-b border-border bg-secondary/30">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Söhbətlər</h2>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {contacts.map(owner => {
@@ -111,22 +114,22 @@ function CommunicationsContent() {
               <div 
                 key={owner.id}
                 onClick={() => setSelectedOwnerId(owner.id)}
-                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${isSelected ? 'bg-orange-50 ring-1 ring-orange-200' : 'hover:bg-zinc-50'}`}
+                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-secondary/50 border border-transparent'}`}
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-orange-100 text-orange-600' : 'bg-zinc-100 text-zinc-500'}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
                   <User className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-zinc-900 truncate">
+                    <h3 className="font-semibold text-foreground truncate">
                       {owner.firstName} {owner.patients?.[0] ? `(${owner.patients[0].name})` : ''}
                     </h3>
-                    <span className="text-xs text-zinc-400 whitespace-nowrap ml-2">
-                      {new Date(lastMsg?.createdAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap ml-2">
+                      {new Date(lastMsg?.createdAt || new Date()).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className="text-sm text-zinc-500 truncate flex items-center gap-1">
-                    {lastMsg?.isFromClinic && <CheckCheck className="w-3 h-3 text-blue-500" />}
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1 font-medium">
+                    {lastMsg?.isFromClinic && <CheckCheck className="w-3.5 h-3.5 text-blue-500" />}
                     {lastMsg?.isAudio ? <><Mic className="w-3 h-3"/> Səsli Mesaj</> : lastMsg?.text}
                   </p>
                 </div>
@@ -137,30 +140,30 @@ function CommunicationsContent() {
       </div>
 
       {/* Sağ Panel: Çat */}
-      <div className="w-2/3 flex flex-col border-none shadow-sm bg-white overflow-hidden rounded-3xl">
+      <div className="w-2/3 flex flex-col bg-card border border-border shadow-sm overflow-hidden rounded-3xl glass-panel">
         {selectedOwner ? (
           <>
-            <div className="p-6 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+            <div className="p-5 border-b border-border bg-secondary/30 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                 <User className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-medium text-zinc-900">{selectedOwner.firstName} {selectedOwner.lastName || ''}</h2>
-                <p className="text-sm text-zinc-500 flex items-center gap-1">
-                  <Phone className="w-3 h-3" /> {selectedOwner.phone}
+                <h2 className="text-lg font-bold text-foreground">{selectedOwner.firstName} {selectedOwner.lastName || ''}</h2>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 font-medium mt-0.5">
+                  <Phone className="w-3.5 h-3.5" /> {selectedOwner.phone}
                 </p>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-background/30">
               {/* History Button (if patients exist) */}
               {selectedOwner.patients?.length > 0 && (
                 <div className="flex justify-center">
                   <button 
                     onClick={() => setShowHistory(!showHistory)}
-                    className="bg-white border border-indigo-100 text-indigo-600 px-4 py-2 rounded-full text-xs font-medium shadow-sm hover:bg-indigo-50 transition-colors flex items-center gap-2"
+                    className="bg-secondary/50 border border-border text-foreground px-4 py-2 rounded-full text-xs font-semibold shadow-sm hover:bg-secondary transition-colors flex items-center gap-2"
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4 text-primary" />
                     {showHistory ? 'Klinik Tarixçəni Gizlət' : 'Klinik Tarixçəyə (EMR) Bax'}
                   </button>
                 </div>
@@ -168,39 +171,39 @@ function CommunicationsContent() {
 
               {/* History Card View */}
               {showHistory && selectedOwner.patients?.map((patient: any) => (
-                <div key={patient.id} className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-2xl mb-4 text-sm text-indigo-900">
-                  <div className="font-bold flex items-center justify-between mb-2 pb-2 border-b border-indigo-200">
-                    <span>🐾 {patient.name} ({patient.species})</span>
+                <div key={patient.id} className="bg-primary/5 border border-primary/20 p-5 rounded-2xl mb-4 text-sm text-foreground shadow-sm">
+                  <div className="font-bold flex items-center justify-between mb-3 pb-3 border-b border-primary/10">
+                    <span className="text-base flex items-center gap-2"><span className="text-xl">🐾</span> {patient.name} <span className="text-muted-foreground text-xs font-medium bg-background px-2 py-0.5 rounded-full border border-border">{patient.species}</span></span>
                   </div>
                   
                   {patient.visits?.length > 0 ? (
-                    <div className="space-y-2 mb-3">
-                      <p className="text-xs font-semibold text-indigo-700">Keçmiş Müayinələr:</p>
+                    <div className="space-y-2 mb-4">
+                      <p className="text-xs font-bold text-primary/80 uppercase tracking-wider">Keçmiş Müayinələr:</p>
                       {patient.visits.map((v: any) => (
-                        <div key={v.id} className="bg-white p-2 rounded-xl border border-indigo-50 text-xs">
-                          <div className="flex justify-between font-bold">
+                        <div key={v.id} className="bg-background/80 p-3 rounded-xl border border-border text-xs shadow-sm">
+                          <div className="flex justify-between font-bold text-foreground">
                             <span>{v.reason}</span>
-                            <span className="text-indigo-400">{new Date(v.visitDate).toLocaleDateString('az-AZ')}</span>
+                            <span className="text-muted-foreground bg-secondary px-2 py-0.5 rounded text-[10px]">{new Date(v.visitDate).toLocaleDateString('az-AZ')}</span>
                           </div>
-                          {v.doctorNotes && <p className="text-indigo-600/80 mt-1">📝 {v.doctorNotes}</p>}
+                          {v.doctorNotes && <p className="text-muted-foreground mt-2 leading-relaxed font-medium">📝 {v.doctorNotes}</p>}
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-xs text-indigo-400 mb-3">Keçmiş müayinə qeydi yoxdur.</p>}
+                  ) : <p className="text-xs text-muted-foreground mb-4 font-medium">Keçmiş müayinə qeydi yoxdur.</p>}
 
                   {patient.vaccines?.length > 0 ? (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-indigo-700">Peyvəndlər:</p>
+                      <p className="text-xs font-bold text-primary/80 uppercase tracking-wider">Peyvəndlər:</p>
                       {patient.vaccines.map((vac: any) => (
-                        <div key={vac.id} className="bg-white flex justify-between items-center p-2 rounded-xl border border-indigo-50 text-xs">
-                          <span className="font-bold">💉 {vac.name}</span>
-                          <span className="bg-indigo-100 px-2 py-0.5 rounded-lg font-bold text-[10px]">
+                        <div key={vac.id} className="bg-background/80 flex justify-between items-center p-3 rounded-xl border border-border text-xs shadow-sm">
+                          <span className="font-bold text-foreground flex items-center gap-1.5">💉 {vac.name}</span>
+                          <span className="bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded-lg font-bold text-[10px]">
                             Növbəti: {new Date(vac.nextDueDate).toLocaleDateString('az-AZ')}
                           </span>
                         </div>
                       ))}
                     </div>
-                  ) : <p className="text-xs text-indigo-400">Peyvənd qeydi yoxdur.</p>}
+                  ) : <p className="text-xs text-muted-foreground font-medium">Peyvənd qeydi yoxdur.</p>}
                 </div>
               ))}
 
@@ -208,18 +211,18 @@ function CommunicationsContent() {
                 const isClinic = msg.isFromClinic
                 return (
                   <div key={msg.id} className={`flex ${isClinic ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] rounded-2xl p-4 shadow-sm ${isClinic ? 'bg-orange-500 text-white rounded-br-none' : 'bg-white border border-zinc-100 text-zinc-800 rounded-bl-none'}`}>
+                    <div className={`max-w-[75%] rounded-2xl p-4 shadow-sm ${isClinic ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-secondary text-secondary-foreground rounded-bl-none border border-border'}`}>
                       {msg.isAudio && msg.audioUrl ? (
                         <div className="flex flex-col gap-2">
-                          <span className="text-xs opacity-70 flex items-center gap-1 mb-1">
-                            <Mic className="w-3 h-3" /> AI oxudu: "{msg.text}"
+                          <span className={`text-xs opacity-80 flex items-center gap-1.5 mb-1 font-medium ${isClinic ? 'text-primary-foreground/90' : 'text-muted-foreground'}`}>
+                            <Mic className="w-3.5 h-3.5" /> AI oxudu: "{msg.text}"
                           </span>
-                          <audio controls src={msg.audioUrl} className="max-w-full h-10" />
+                          <audio controls src={msg.audioUrl} className="max-w-full h-10 rounded-lg" />
                         </div>
                       ) : (
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                       )}
-                      <div className={`text-[10px] mt-2 flex items-center gap-1 ${isClinic ? 'text-orange-100 justify-end' : 'text-zinc-400'}`}>
+                      <div className={`text-[10px] mt-2 flex items-center gap-1 font-medium ${isClinic ? 'text-primary-foreground/70 justify-end' : 'text-muted-foreground'}`}>
                         <Clock className="w-3 h-3" />
                         {new Date(msg.createdAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
                         {isClinic && <CheckCheck className="w-3 h-3 ml-1" />}
@@ -232,28 +235,30 @@ function CommunicationsContent() {
 
             {/* Pending Actions Footer */}
             {pendingAppointment && (
-              <div className="p-4 bg-amber-50 border-t border-amber-200">
-                <p className="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1 uppercase tracking-wide">
-                  <CalendarIcon className="w-4 h-4" /> 
+              <div className="p-4 bg-primary/5 border-t border-primary/20">
+                <p className="text-xs font-bold text-foreground mb-3 flex items-center gap-1.5 uppercase tracking-wide">
+                  <span className="w-5 h-5 rounded flex items-center justify-center bg-primary/20 text-primary">
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                  </span>
                   Gözləyən Zəng/Müraciət (Müştəriyə WA Cavabı Gedəcək):
                 </p>
                 <div className="flex gap-2">
-                  <button onClick={() => handleApprove(pendingAppointment.id)} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm transition-colors">
+                  <button onClick={() => handleApprove(pendingAppointment.id)} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors border border-emerald-700/50">
                     <CheckCircle className="w-4 h-4" /> Təsdiqlə
                   </button>
-                  <button onClick={() => setRescheduleModalId(pendingAppointment.id)} className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm transition-colors">
+                  <button onClick={() => setRescheduleModalId(pendingAppointment.id)} className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors border border-amber-600/50">
                     <Clock className="w-4 h-4" /> Vaxtı Dəyiş
                   </button>
-                  <button onClick={() => handleReject(pendingAppointment.id)} className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm transition-colors">
-                    <XCircle className="w-4 h-4" /> Rədd et
+                  <button onClick={() => handleReject(pendingAppointment.id)} className="px-4 py-2.5 bg-background border border-border hover:bg-secondary text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors">
+                    <XCircle className="w-4 h-4 text-red-500" /> Rədd et
                   </button>
                 </div>
               </div>
             )}
 
-            <div className="p-4 border-t border-zinc-100 bg-white">
-              <div className="flex items-center gap-2">
-                <button className="text-zinc-400 shrink-0 p-2 hover:bg-zinc-100 rounded-full">
+            <div className="p-4 border-t border-border bg-card">
+              <div className="flex items-center gap-3">
+                <button className="text-muted-foreground shrink-0 p-2 hover:bg-secondary rounded-full transition-colors">
                   <Paperclip className="w-5 h-5" />
                 </button>
                 <input 
@@ -261,9 +266,9 @@ function CommunicationsContent() {
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  className="bg-zinc-50 border-none h-12 rounded-full px-6 text-[15px] flex-1 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  className="bg-background border border-input h-12 rounded-full px-6 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground transition-all placeholder:text-muted-foreground"
                 />
-                <button onClick={handleSend} className="bg-orange-500 hover:bg-orange-600 text-white rounded-full h-12 px-6 shrink-0 shadow-sm shadow-orange-200 flex items-center justify-center font-medium transition-colors">
+                <button onClick={handleSend} disabled={!replyText.trim()} className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-full h-12 px-6 shrink-0 shadow-sm flex items-center justify-center font-bold text-sm transition-all">
                   <Send className="w-4 h-4 mr-2" />
                   Göndər
                 </button>
@@ -271,32 +276,32 @@ function CommunicationsContent() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-400">
-            <div className="w-24 h-24 bg-zinc-50 rounded-full flex items-center justify-center mb-4">
-              <Phone className="w-10 h-10 text-zinc-300" />
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+            <div className="w-24 h-24 bg-secondary rounded-full flex items-center justify-center mb-6 border border-border shadow-sm">
+              <Phone className="w-10 h-10 text-muted-foreground/50" />
             </div>
-            <p>Söhbətə başlamaq üçün soldan bir kontakt seçin.</p>
+            <p className="font-medium">Söhbətə başlamaq üçün soldan bir kontakt seçin.</p>
           </div>
         )}
       </div>
 
       {/* Reschedule Modal */}
       {rescheduleModalId && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-amber-200">
-            <h3 className="text-lg font-black text-slate-800 mb-2">✏️ Vaxtı Dəyişdirin və Təsdiqləyin</h3>
-            <p className="text-xs text-slate-500 mb-4">Müştəriyə təyin etdiyiniz yeni saat üçün avtomatik WhatsApp mesajı göndəriləcək.</p>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-card rounded-3xl p-6 w-full max-w-md shadow-2xl border border-border glass-panel">
+            <h3 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2"><span>✏️</span> Vaxtı Dəyişdirin</h3>
+            <p className="text-xs text-muted-foreground mb-6 font-medium">Müştəriyə təyin etdiyiniz yeni saat üçün avtomatik WhatsApp mesajı göndəriləcək.</p>
 
-            <label className="block text-xs font-bold text-slate-700 mb-2">Yeni Saatı Seçin:</label>
+            <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wider">Yeni Saatı Seçin:</label>
             <div className="grid grid-cols-4 gap-2 mb-6">
               {[9, 10, 11, 12, 14, 15, 16, 17, 18, 19].map((hour) => (
                 <button
                   key={hour}
                   onClick={() => setSelectedHour(hour)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
                     selectedHour === hour
-                      ? 'bg-amber-500 text-white shadow-md scale-105'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-primary text-primary-foreground shadow-md scale-105 border-transparent'
+                      : 'bg-secondary text-foreground hover:bg-secondary/80 border border-border'
                   }`}
                 >
                   {hour}:00
@@ -304,16 +309,16 @@ function CommunicationsContent() {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={handleRescheduleSubmit}
-                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all"
+                className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl transition-all shadow-sm"
               >
                 ✓ Saat {selectedHour}:00-a Təsdiqlə
               </button>
               <button
                 onClick={() => setRescheduleModalId(null)}
-                className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all"
+                className="px-5 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold text-sm rounded-xl transition-all border border-border"
               >
                 Ləğv et
               </button>
