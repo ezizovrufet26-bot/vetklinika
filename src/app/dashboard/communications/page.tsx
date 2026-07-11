@@ -6,10 +6,16 @@ import { getOmnichannelData, sendManualReply } from '@/app/actions/communication
 import { Phone, User, Send, Paperclip, CheckCheck, Clock, Mic, Calendar as CalendarIcon, FileText, CheckCircle, XCircle } from 'lucide-react'
 import { updateAppointmentStatus, rescheduleAndApproveAppointment } from '@/app/actions/calendar'
 import AppShell from '@/components/AppShell'
+import PageHeader from '@/components/PageHeader'
 
 export default function CommunicationsPage() {
   return (
     <AppShell>
+      <PageHeader
+        title="Ünsiyyət"
+        highlight="Mərkəzi"
+        subtitle="WhatsApp söhbətləri və təsdiq gözləyən randevular bir yerdə"
+      />
       <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Yüklənir...</div>}>
         <CommunicationsContent />
       </Suspense>
@@ -100,7 +106,7 @@ function CommunicationsContent() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] gap-6">
+    <div className="flex h-[calc(100vh-16rem)] gap-6">
       {/* Sol Panel: Kontaktlar */}
       <div className="w-1/3 flex flex-col bg-card border border-border shadow-sm overflow-hidden rounded-3xl glass-panel">
         <div className="p-6 border-b border-border bg-secondary/30">
@@ -129,7 +135,7 @@ function CommunicationsContent() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate flex items-center gap-1 font-medium">
-                    {lastMsg?.isFromClinic && <CheckCheck className="w-3.5 h-3.5 text-blue-500" />}
+                    {lastMsg?.isFromClinic && <CheckCheck className="w-3.5 h-3.5 text-info" />}
                     {lastMsg?.isAudio ? <><Mic className="w-3 h-3"/> Səsli Mesaj</> : lastMsg?.text}
                   </p>
                 </div>
@@ -243,14 +249,14 @@ function CommunicationsContent() {
                   Gözləyən Zəng/Müraciət (Müştəriyə WA Cavabı Gedəcək):
                 </p>
                 <div className="flex gap-2">
-                  <button onClick={() => handleApprove(pendingAppointment.id)} className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors border border-emerald-700/50">
+                  <button onClick={() => handleApprove(pendingAppointment.id)} className="flex-1 py-2.5 bg-success hover:brightness-110 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-soft transition-colors border border-success/50">
                     <CheckCircle className="w-4 h-4" /> Təsdiqlə
                   </button>
-                  <button onClick={() => setRescheduleModalId(pendingAppointment.id)} className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors border border-amber-600/50">
+                  <button onClick={() => setRescheduleModalId(pendingAppointment.id)} className="flex-1 py-2.5 bg-warning hover:brightness-110 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-soft transition-colors border border-warning/50">
                     <Clock className="w-4 h-4" /> Vaxtı Dəyiş
                   </button>
-                  <button onClick={() => handleReject(pendingAppointment.id)} className="px-4 py-2.5 bg-background border border-border hover:bg-secondary text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-colors">
-                    <XCircle className="w-4 h-4 text-red-500" /> Rədd et
+                  <button onClick={() => handleReject(pendingAppointment.id)} className="px-4 py-2.5 bg-background border border-border hover:bg-secondary text-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-soft transition-colors">
+                    <XCircle className="w-4 h-4 text-destructive" /> Rədd et
                   </button>
                 </div>
               </div>
