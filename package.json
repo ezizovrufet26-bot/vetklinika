@@ -10,7 +10,10 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "test": "vitest run",
+    "lint": "eslint",
+    "voice": "node voice-agent/server.mjs",
+    "gateway": "node whatsapp-gateway.mjs"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.21",
@@ -28,6 +31,7 @@
     "framer-motion": "^12.0.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.21.0",
+    "msedge-tts": "^2.0.7",
     "next": "16.2.9",
     "pg": "^8.22.0",
     "pino": "^10.3.1",
@@ -48,6 +52,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
