@@ -83,3 +83,31 @@ export async function updateProductStock(id: string, stock: number) {
   await prisma.product.update({ where: { id }, data: { stock } })
   revalidatePath('/inventory')
 }
+
+export async function updateProduct(id: string, data: {
+  name: string; category: string; price: number; stock: number; minStock: number; unit: string
+}) {
+  if (!data.name?.trim()) return { error: 'Ad boş ola bilməz.' }
+  if (data.price < 0 || data.stock < 0 || data.minStock < 0) {
+    return { error: 'Qiymət/stok mənfi ola bilməz.' }
+  }
+  await prisma.product.update({ where: { id }, data })
+  revalidatePath('/inventory')
+  return { success: true }
+}
+
+/** Mövcud stoka əlavə/çıxma edir (mənfi delta ilə azaldır) — sıfırın altına düşmür. */
+export async function adjustProductStock(id: string, delta: number) {
+  const product = await prisma.product.findUnique({ where: { id } })
+  if (!product) return { error: 'Məhsul tapılmadı.' }
+  const newStock = Math.max(0, product.stock + delta)
+  await prisma.product.update({ where: { id }, data: { stock: newStock } })
+  revalidatePath('/inventory')
+  return { success: true, stock: newStock }
+}
+
+export async function deleteProduct(id: string) {
+  await prisma.product.delete({ where: { id } })
+  revalidatePath('/inventory')
+  return { success: true }
+}

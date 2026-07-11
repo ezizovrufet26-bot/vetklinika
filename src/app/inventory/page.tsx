@@ -2,9 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { AlertTriangle, Pill, HeartHandshake, Beef, Package } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import PageHeader from '@/components/PageHeader'
-import Badge from '@/components/ui/badge'
 
 import InventoryManagerModal from '@/components/InventoryManagerModal'
+import InventoryProductCard from '@/components/InventoryProductCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,47 +93,9 @@ export default async function InventoryPage() {
             {cat}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {products.filter(p => p.category === cat).map(product => {
-              const isLow = product.stock <= product.minStock && product.minStock > 0
-              return (
-                <div
-                  key={product.id}
-                  className={`bg-card rounded-2xl border shadow-soft hover:shadow-premium transition-shadow p-5 ${
-                    isLow ? 'border-destructive/30' : 'border-border'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-3 gap-2">
-                    <h3 className="font-bold text-sm leading-tight">{product.name}</h3>
-                    {isLow && <Badge tone="destructive">AZ!</Badge>}
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-2xl font-display font-extrabold">
-                        {product.price} <span className="text-sm font-medium text-muted-foreground">₼</span>
-                      </p>
-                      <p className={`text-sm font-semibold mt-1 ${isLow ? 'text-destructive' : 'text-success'}`}>
-                        {product.stock} {product.unit} qalıb
-                      </p>
-                    </div>
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                      isLow ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'
-                    }`}>
-                      <CategoryIcon cat={cat} className="w-5 h-5" />
-                    </div>
-                  </div>
-                  {product.minStock > 0 && (
-                    <div className="mt-3.5">
-                      <div className="w-full bg-secondary rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${isLow ? 'bg-destructive' : 'bg-primary'}`}
-                          style={{ width: `${Math.min(100, (product.stock / (product.minStock * 4)) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {products.filter(p => p.category === cat).map(product => (
+              <InventoryProductCard key={product.id} product={product} />
+            ))}
           </div>
         </div>
       ))}
