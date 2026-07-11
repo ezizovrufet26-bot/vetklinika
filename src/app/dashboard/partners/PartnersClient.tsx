@@ -14,7 +14,10 @@ import Badge from '@/components/ui/badge'
 import {
   savePartner, togglePartnerPublished, deletePartner, saveDoctor, deleteDoctor,
 } from '@/app/actions/partners'
-import { WEEKDAY_KEYS, WEEKDAY_LABELS_AZ, type WorkingHours, type WeekdayKey } from '@/lib/directory'
+import {
+  WEEKDAY_KEYS, WEEKDAY_LABELS_AZ, parsePriceList,
+  type WorkingHours, type WeekdayKey, type PriceItem,
+} from '@/lib/directory'
 
 const inputCls =
   'w-full px-4 py-3 bg-card border border-input rounded-xl text-sm font-bold text-foreground ' +
@@ -31,7 +34,8 @@ type Clinic = {
   publicPhone: string | null; whatsappNumber: string | null; googlePlaceUrl: string | null
   services: string[]; latitude: number | null; longitude: number | null
   workingHours: unknown; isVetKlinikaTenant: boolean; emergencyAvailable: boolean
-  displayOrder: number; doctors: Doctor[]; _count: { users: number }
+  displayOrder: number; priceList: unknown; achievements: string[]
+  doctors: Doctor[]; _count: { users: number }
 }
 
 const DEFAULT_HOURS: WorkingHours = {
@@ -78,6 +82,38 @@ function HoursEditor({ value, onChange }: { value: WorkingHours; onChange: (h: W
   )
 }
 
+function PriceListEditor({ value, onChange }: { value: PriceItem[]; onChange: (v: PriceItem[]) => void }) {
+  return (
+    <div className="space-y-2">
+      {value.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            value={item.name}
+            onChange={(e) => onChange(value.map((it, j) => (j === i ? { ...it, name: e.target.value } : it)))}
+            placeholder="Xidmət adı (məs: Peyvənd)"
+            className="flex-1 px-3 py-2 bg-card border border-input rounded-lg text-xs font-bold outline-none focus:border-primary"
+          />
+          <input
+            type="number" step="0.01" min="0"
+            value={Number.isFinite(item.price) ? item.price : ''}
+            onChange={(e) => onChange(value.map((it, j) => (j === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it)))}
+            placeholder="₼"
+            className="w-24 px-3 py-2 bg-card border border-input rounded-lg text-xs font-bold outline-none focus:border-primary"
+          />
+          <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))}
+            className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...value, { name: '', price: 0 }])}
+        className="flex items-center gap-1.5 text-xs font-bold text-primary hover:brightness-110 transition-all">
+        <Plus className="w-3.5 h-3.5" /> Qiymət sətri əlavə et
+      </button>
+    </div>
+  )
+}
+
 function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => void }) {
   const router = useRouter()
   const [msg, setMsg] = useState({ success: '', error: '' })
@@ -87,6 +123,7 @@ function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => v
       ? (clinic.workingHours as WorkingHours)
       : DEFAULT_HOURS
   )
+  const [prices, setPrices] = useState<PriceItem[]>(parsePriceList(clinic?.priceList))
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -94,6 +131,7 @@ function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => v
     setMsg({ success: '', error: '' })
     const formData = new FormData(e.currentTarget)
     formData.set('workingHours', JSON.stringify(hours))
+    formData.set('priceList', JSON.stringify(prices.filter(p => p.name.trim())))
     const result = await savePartner(null, formData)
     if (result.error) {
       setMsg({ success: '', error: result.error })
@@ -189,6 +227,19 @@ function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => v
       <div className="bg-secondary/35 border border-border rounded-2xl p-4">
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">İş saatları</p>
         <HoursEditor value={hours} onChange={setHours} />
+      </div>
+
+      <div className="bg-secondary/35 border border-border rounded-2xl p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Qiymət cədvəli (profildə görünür)</p>
+        <PriceListEditor value={prices} onChange={setPrices} />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Nailiyyətlər (hər sətir ayrıca göstərilir)
+        </label>
+        <textarea name="achievements" defaultValue={(clinic?.achievements || []).join('\n')} rows={3}
+          placeholder={'10 ildən artıq təcrübə\n5000+ uğurlu müalicə\nBeynəlxalq sertifikatlı həkimlər'} className={inputCls} />
       </div>
 
       <div className="flex flex-wrap gap-5">

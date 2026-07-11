@@ -36,6 +36,8 @@ model Clinic {
   displayOrder       Int      @default(0)
   googlePlaceUrl     String?
   emergencyAvailable Boolean  @default(false)
+  priceList          Json? // [{name:"Peyvənd",price:25},...] — ictimai qiymət cədvəli
+  achievements       String[] @default([]) // Nailiyyətlər/sertifikatlar — profildə ayrıca bölmə
 
   users   User[]
   doctors ClinicDoctor[]

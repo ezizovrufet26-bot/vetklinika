@@ -129,3 +129,21 @@ export function openStatus(hours: WorkingHours, now: Date = new Date()): {
     todayLabel: `${today.open} – ${today.close}`,
   }
 }
+
+// ── Qiymət cədvəli ──────────────────────────────────────────────────────
+
+export type PriceItem = { name: string; price: number }
+
+/** Json sahəsindən gələn dəyəri təhlükəsiz PriceItem[]-ə çevirir (zibil → boş). */
+export function parsePriceList(raw: unknown): PriceItem[] {
+  if (!Array.isArray(raw)) return []
+  const out: PriceItem[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const { name, price } = item as { name?: unknown; price?: unknown }
+    if (typeof name === 'string' && name.trim() && typeof price === 'number' && price >= 0) {
+      out.push({ name: name.trim().slice(0, 120), price })
+    }
+  }
+  return out
+}

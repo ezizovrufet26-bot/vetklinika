@@ -3,12 +3,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
   MapPin, Phone, MessageCircle, Sparkles, Building2, UserRound, Clock,
-  Navigation, Siren, ShieldCheck, ArrowLeft, Bot,
+  Navigation, Siren, ShieldCheck, ArrowLeft, Bot, Trophy, Banknote,
 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import {
   normalizeTelHref, normalizeWhatsAppNumber, parseWorkingHours, openStatus,
-  WEEKDAY_KEYS, WEEKDAY_LABELS_AZ, WEEKDAY_SCHEMA_ORG, locativeSuffix,
+  parsePriceList, WEEKDAY_KEYS, WEEKDAY_LABELS_AZ, WEEKDAY_SCHEMA_ORG, locativeSuffix,
 } from '@/lib/directory'
 import PublicShell from '@/components/directory/PublicShell'
 import JoinCta from '@/components/directory/JoinCta'
@@ -52,6 +52,7 @@ export default async function ClinicProfilePage({ params }: { params: Params }) 
   const hours = parseWorkingHours(clinic.workingHours)
   const status = openStatus(hours)
   const hasHours = Object.keys(hours).length > 0
+  const priceList = parsePriceList(clinic.priceList)
   const directionsUrl =
     clinic.latitude != null && clinic.longitude != null
       ? `https://www.google.com/maps/dir/?api=1&destination=${clinic.latitude},${clinic.longitude}`
@@ -202,6 +203,44 @@ export default async function ClinicProfilePage({ params }: { params: Params }) 
                   {clinic.services.map(s => (
                     <div key={s} className="bg-card border border-border rounded-xl px-4 py-3 text-sm font-bold text-foreground flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" /> {s}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {priceList.length > 0 && (
+              <section>
+                <h2 className="text-lg font-display font-extrabold mb-3 flex items-center gap-2">
+                  <Banknote className="w-5 h-5 text-primary" /> Qiymətlər
+                </h2>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-soft">
+                  {priceList.map((item, i) => (
+                    <div key={i}
+                      className={`flex items-center justify-between px-5 py-3.5 text-sm ${i > 0 ? 'border-t border-border' : ''}`}>
+                      <span className="font-bold text-foreground">{item.name}</span>
+                      <span className="font-extrabold text-primary whitespace-nowrap">{item.price} ₼</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground font-medium mt-2">
+                  Qiymətlər təxminidir — dəqiq məbləğ müayinədən sonra müəyyənləşir.
+                </p>
+              </section>
+            )}
+
+            {clinic.achievements.length > 0 && (
+              <section>
+                <h2 className="text-lg font-display font-extrabold mb-3 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-warning" /> Nailiyyətlər
+                </h2>
+                <div className="space-y-2.5">
+                  {clinic.achievements.map((a, i) => (
+                    <div key={i} className="bg-card border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground flex items-start gap-3">
+                      <span className="w-7 h-7 rounded-lg bg-warning/10 text-warning flex items-center justify-center shrink-0">
+                        <Trophy className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="leading-relaxed">{a}</span>
                     </div>
                   ))}
                 </div>

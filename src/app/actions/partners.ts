@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { uploadImageBuffer } from '@/lib/cloudinary'
-import { slugify, normalizeWhatsAppNumber, parseWorkingHours } from '@/lib/directory'
+import { slugify, normalizeWhatsAppNumber, parseWorkingHours, parsePriceList } from '@/lib/directory'
 
 /**
  * Tərəfdaş klinikaların (ictimai kataloq) idarəsi — yalnız SUPERADMIN.
@@ -95,6 +95,17 @@ export async function savePartner(_prev: any, formData: FormData) {
     try { workingHours = parseWorkingHours(JSON.parse(whRaw)) } catch { workingHours = undefined }
   }
 
+  // Qiymət cədvəli: gizli input-da JSON string, parsePriceList zibili süzür
+  let priceList: ReturnType<typeof parsePriceList> | undefined
+  const plRaw = String(formData.get('priceList') || '')
+  if (plRaw) {
+    try { priceList = parsePriceList(JSON.parse(plRaw)) } catch { priceList = undefined }
+  }
+
+  // Nailiyyətlər: sətir-sətir textarea-dan gəlir
+  const achievements = String(formData.get('achievements') || '')
+    .split('\n').map(s => s.trim()).filter(Boolean).slice(0, 20)
+
   let logoUrl: string | undefined
   let coverPhotoUrl: string | undefined
   try {
@@ -108,9 +119,11 @@ export async function savePartner(_prev: any, formData: FormData) {
     name,
     city, district, address, description, publicPhone, whatsappNumber,
     googlePlaceUrl, services, emergencyAvailable, isVetKlinikaTenant, displayOrder,
+    achievements,
     latitude: Number.isFinite(latitude) ? latitude : null,
     longitude: Number.isFinite(longitude) ? longitude : null,
     ...(workingHours !== undefined ? { workingHours } : {}),
+    ...(priceList !== undefined ? { priceList } : {}),
     ...(logoUrl ? { logoUrl } : {}),
     ...(coverPhotoUrl ? { coverPhotoUrl } : {}),
   }
