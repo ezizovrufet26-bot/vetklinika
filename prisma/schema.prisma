@@ -14,9 +14,7 @@ model Clinic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Klinika brendinqi — gələcək ictimai klinika kataloqu səhifəsi üçün
-  // (həkim heyəti burada saxlanmır, Clinic.users-dən DOCTOR/ADMIN rollu
-  // istifadəçilər kimi törədilir)
+  // Klinika brendinqi
   logoUrl     String?
   address     String?
   latitude    Float?
@@ -24,7 +22,42 @@ model Clinic {
   publicPhone String?
   services    String[] @default([])
 
-  users User[]
+  // İctimai kataloq (/klinikalar) sahələri
+  slug               String?  @unique // URL: /klinikalar/[slug]
+  isPublished        Boolean  @default(false)
+  city               String?
+  district           String?
+  description        String?  @db.Text
+  coverPhotoUrl      String?
+  photos             String[] @default([])
+  whatsappNumber     String? // wa.me linki üçün — yalnız rəqəm saxlanır
+  workingHours       Json? // {mon:{open:"09:00",close:"19:00"},...} — OpeningHoursSpecification-ə uyğun
+  isVetKlinikaTenant Boolean  @default(false) // "24/7 AI randevu aktiv" nişanı açıq idarə olunur
+  displayOrder       Int      @default(0)
+  googlePlaceUrl     String?
+  emergencyAvailable Boolean  @default(false)
+
+  users   User[]
+  doctors ClinicDoctor[]
+}
+
+// İctimai kataloqda göstərilən həkim heyəti — display-only marketing datası.
+// User = giriş kimliyi; tərəfdaş klinikaların həkimləri sistemə girmir, ona görə
+// ayrıca modeldir. Tərəfdaş sonradan PIMS-ə qoşulsa, userId ilə real hesaba bağlanır.
+model ClinicDoctor {
+  id           String   @id @default(uuid())
+  clinicId     String
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  userId       String?  @unique
+  name         String
+  title        String?
+  photoUrl     String?
+  bio          String?  @db.Text
+  specialties  String[] @default([])
+  displayOrder Int      @default(0)
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 enum UserRole {
