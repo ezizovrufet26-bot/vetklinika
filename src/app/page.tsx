@@ -107,6 +107,7 @@ export default function LandingPage() {
           <a href="#features" className="hover:text-primary transition-colors">İmkanlar</a>
           <a href="#ai" className="hover:text-primary transition-colors">AI Resepşn</a>
           <a href="#pricing" className="hover:text-primary transition-colors">Qiymətlər</a>
+          <Link href="/klinikalar" className="hover:text-primary transition-colors">Klinikalar</Link>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -391,6 +392,32 @@ export default function LandingPage() {
       </section>
 
       {/* ============ FINAL CTA ============ */}
+      {/* ============ TƏRƏFDAŞ KLİNİKALAR KATALOQU ============ */}
+      <section className="py-16 px-6">
+        <FadeUp className="max-w-[1200px] mx-auto">
+          <div className="bg-card border border-border rounded-3xl p-8 sm:p-12 shadow-soft flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                <PawPrint className="w-5 h-5 text-primary" />
+                <span className="text-xs font-extrabold uppercase tracking-widest text-primary">Heyvan sahibləri üçün</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight">
+                Etibarlı baytar klinikaları <span className="text-gradient">kataloqu</span>
+              </h2>
+              <p className="text-muted-foreground font-medium mt-3 max-w-xl">
+                Şəhərinizdəki tərəfdaş klinikaları tapın: xidmətlər, həkimlər, iş saatları
+                və bir toxunuşla WhatsApp randevusu.
+              </p>
+            </div>
+            <Link href="/klinikalar" className="shrink-0">
+              <Button size="lg">
+                Klinikalara Bax <ArrowRight className="w-4.5 h-4.5" />
+              </Button>
+            </Link>
+          </div>
+        </FadeUp>
+      </section>
+
       <section className="py-24 px-6">
         <FadeUp className="max-w-[900px] mx-auto text-center">
           <div className="rounded-[2.5rem] bg-gradient-to-br from-primary to-accent text-primary-foreground p-10 sm:p-16 shadow-glow relative overflow-hidden">
@@ -438,6 +465,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-5 text-xs font-bold text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">İmkanlar</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Qiymətlər</a>
+            <Link href="/klinikalar" className="hover:text-primary transition-colors">Klinikalar</Link>
             <Link href="/login" className="hover:text-primary transition-colors">Giriş</Link>
           </div>
         </div>
