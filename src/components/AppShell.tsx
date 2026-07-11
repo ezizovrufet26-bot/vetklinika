@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, PawPrint, CalendarDays, MessageCircle, Receipt,
   Package, Microscope, BarChart3, Settings, Plus, Search, Menu, X, Stethoscope,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ThemeToggle from '@/components/ui/theme-toggle'
@@ -26,7 +27,11 @@ const NAV_ITEMS = [
   { href: '/dashboard/settings', label: 'Ayarlar', icon: Settings },
 ]
 
-function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+// Yalnız SUPERADMIN görür — kataloq kurasiyası (/api/me ilə yoxlanır)
+const SUPERADMIN_NAV_ITEM = { href: '/dashboard/partners', label: 'Tərəfdaşlar', icon: Building2 }
+
+function SidebarContent({ pathname, isSuperAdmin, onNavigate }: { pathname: string; isSuperAdmin: boolean; onNavigate?: () => void }) {
+  const navItems = isSuperAdmin ? [...NAV_ITEMS, SUPERADMIN_NAV_ITEM] : NAV_ITEMS
   return (
     <div className="flex flex-col h-full">
       {/* Brend */}
@@ -46,7 +51,7 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
 
       {/* Naviqasiya */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map(item => {
+        {navItems.map(item => {
           const active =
             item.href === '/dashboard'
               ? pathname === '/dashboard'
@@ -99,12 +104,20 @@ export default function AppShell({
 }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then(res => (res.ok ? res.json() : null))
+      .then(me => setIsSuperAdmin(me?.authenticated && me.role === 'SUPERADMIN'))
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-background bg-aurora">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 border-r border-border glass-panel z-40">
-        <SidebarContent pathname={pathname} />
+        <SidebarContent pathname={pathname} isSuperAdmin={isSuperAdmin} />
       </aside>
 
       {/* Mobile slide-over */}
@@ -132,7 +145,7 @@ export default function AppShell({
               >
                 <X className="w-5 h-5" />
               </button>
-              <SidebarContent pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+              <SidebarContent pathname={pathname} isSuperAdmin={isSuperAdmin} onNavigate={() => setMobileOpen(false)} />
             </motion.aside>
           </>
         )}
