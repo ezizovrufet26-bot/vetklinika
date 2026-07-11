@@ -4,19 +4,25 @@ import { verifySessionToken, SESSION_COOKIE } from '@/lib/auth'
 /**
  * Marşrut qoruması. Aşağıdakılar İCTİMAİDİR:
  *  - "/" (landing), "/login", "/forgot-password"
+ *  - /klinikalar və bütün alt-səhifələri (ictimai kataloq + klinika profilləri)
  *  - /api/whatsapp/* (webhook — xarici servis çağırır)
  *  - /api/cron/* (xatırlatma cron-u)
  *  - /api/access-requests POST (landing-dəki qeydiyyat forması)
  * Qalan hər şey etibarlı sessiya tələb edir.
  */
 
-const PUBLIC_PATHS = ['/', '/login', '/forgot-password']
+const PUBLIC_PATHS = ['/', '/login', '/forgot-password', '/sitemap.xml', '/robots.txt']
+// Prefiks qaydası: alt-slug-lar da ictimaidir (/klinikalar/merkez-klinikasi)
+const PUBLIC_PATH_PREFIXES = ['/klinikalar']
 const PUBLIC_API_PREFIXES = ['/api/whatsapp', '/api/cron']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next()
+  if (PUBLIC_PATH_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
   if (PUBLIC_API_PREFIXES.some(p => pathname.startsWith(p))) return NextResponse.next()
   // Landing-dəki müraciət forması login-siz POST edə bilməlidir;
   // GET/PATCH icazələri route daxilində rol ilə yoxlanılır.

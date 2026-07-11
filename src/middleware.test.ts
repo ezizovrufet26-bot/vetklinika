@@ -41,4 +41,24 @@ describe('middleware public-path allowlist', () => {
     const res = await middleware(requestFor('/api/whatsapp/webhook', { method: 'POST' }))
     expect(res.status).not.toBe(401)
   })
+
+  it('lets an unauthenticated visitor reach the public directory and clinic profiles', async () => {
+    for (const path of ['/klinikalar', '/klinikalar/merkez-baytarliq-klinikasi']) {
+      const res = await middleware(requestFor(path))
+      expect(res.headers.get('location')).toBeNull()
+    }
+  })
+
+  it('does NOT treat prefix-lookalike paths as public (/klinikalarfake)', async () => {
+    const res = await middleware(requestFor('/klinikalarfake'))
+    expect(res.status).toBe(307)
+    expect(res.headers.get('location')).toContain('/login')
+  })
+
+  it('lets crawlers reach sitemap.xml and robots.txt', async () => {
+    for (const path of ['/sitemap.xml', '/robots.txt']) {
+      const res = await middleware(requestFor(path))
+      expect(res.headers.get('location')).toBeNull()
+    }
+  })
 })
