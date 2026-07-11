@@ -2,6 +2,24 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { draftSoapNote } from '@/lib/ai-brain'
+
+export async function generateSoapDraft(input: {
+  species: string
+  patientName: string
+  reason: string
+  temperature: number | null
+  weight: number | null
+}) {
+  if (!input.reason?.trim()) {
+    return { error: 'Qaralama üçün əvvəlcə ziyarət səbəbini yazın.' }
+  }
+  const draft = await draftSoapNote(input)
+  if (!draft) {
+    return { error: 'AI qaralama hazırlaya bilmədi. Qeydi əl ilə yazın.' }
+  }
+  return { draft }
+}
 
 export async function addVisit(patientId: string, formData: FormData) {
   const reason = formData.get('reason') as string

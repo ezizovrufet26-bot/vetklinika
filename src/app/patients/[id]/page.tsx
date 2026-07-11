@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { MapPin, Save, Thermometer, Scale, User } from 'lucide-react'
+import { MapPin, Thermometer, Scale, User } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import Badge from '@/components/ui/badge'
 import BodyMap from '@/components/BodyMap'
@@ -8,17 +8,9 @@ import AiVoiceAssistant from '@/components/AiVoiceAssistant'
 import DiagnosticViewer from '@/components/DiagnosticViewer'
 import LabResultsTable from '@/components/LabResultsTable'
 import DeviceIntegrationSimulator from '@/components/DeviceIntegrationSimulator'
-import { addVisit } from '@/app/actions/visits'
+import VisitForm from './VisitForm'
 
 export const dynamic = 'force-dynamic'
-
-const inputCls =
-  'w-full bg-secondary/50 border border-input rounded-xl p-3.5 text-xs font-medium text-foreground ' +
-  'focus:ring-2 focus:ring-ring/30 focus:bg-card outline-none transition-all placeholder:text-muted-foreground/60'
-
-const soapBadge = (letter: string, cls: string) => (
-  <span className={`w-5 h-5 rounded-md flex items-center justify-center font-extrabold ${cls}`}>{letter}</span>
-)
 
 export default async function PatientRecord({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params
@@ -101,67 +93,7 @@ export default async function PatientRecord({ params }: { params: Promise<{ id: 
                 </div>
               </div>
 
-              <form action={addVisit.bind(null, patient.id)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {soapBadge('S', 'bg-warning/10 text-warning')} Subyektiv (Şikayət)
-                    </label>
-                    <textarea
-                      name="reason" required
-                      className={`${inputCls} h-28`}
-                      placeholder="Heyvan sahibi nədən şikayətlənir?"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {soapBadge('O', 'bg-info/10 text-info')} Obyektiv (Göstəricilər)
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <Thermometer className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <input type="number" step="0.1" name="temperature" className={`${inputCls} pl-8`} placeholder="Temp (°C)" />
-                      </div>
-                      <div className="relative">
-                        <Scale className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <input type="number" step="0.1" name="weight" className={`${inputCls} pl-8`} placeholder="Çəki (KQ)" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-border">
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {soapBadge('A', 'bg-accent/10 text-accent')} Assessment (Diaqnoz)
-                    </label>
-                    <textarea
-                      name="doctorNotes"
-                      className={`${inputCls} h-28`}
-                      placeholder="İlkin və ya dəqiq diaqnoz..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {soapBadge('P', 'bg-primary-soft text-primary')} Plan (Müalicə)
-                    </label>
-                    <textarea
-                      name="treatment"
-                      className={`${inputCls} h-28`}
-                      placeholder="Yazılan dərmanlar və müalicə planı..."
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-primary text-primary-foreground font-extrabold text-sm rounded-xl shadow-glow hover:brightness-110 active:scale-[0.99] transition-all flex justify-center items-center gap-2"
-                >
-                  <Save className="w-4 h-4" /> Tibbi Qeydi Yaddaşa Ver
-                </button>
-              </form>
+              <VisitForm patientId={patient.id} species={patient.species} patientName={patient.name} />
             </div>
 
             {/* Ziyarət tarixçəsi */}
