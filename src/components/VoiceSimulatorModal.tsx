@@ -88,10 +88,9 @@ export default function VoiceSimulatorModal() {
       const res = await processAiReceptionistMessage({ text: transcript, phone })
 
       setLoading(false)
-      if (res.success && res.appointment) {
-        const reply = `Müraciətiniz qeydə alındı! "${res.appointment.patient.name}" (${res.appointment.patient.species}) üçün müraciətiniz həkimimizə ötürüldü. Hələ ki randevunuz təsdiqlənməyib. Həkim yoxlayıb təsdiqlədikdən sonra sizə WhatsApp-la təsdiq mesajı göndərəcəyik.`
-        setAiResponse(reply)
-        speakText(reply)
+      if (res.success && res.replyMessage) {
+        setAiResponse(res.replyMessage)
+        speakText(res.replyMessage)
       } else {
         setAiResponse(`❌ Xəta: ${res.error || 'Qeydə alına bilmədi'}`)
       }

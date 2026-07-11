@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VetKlinika — Canlı AI Resepsiyon</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%);
+    color: #e2e8f0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 520px; background: rgba(30, 41, 59, .7);
+    border: 1px solid rgba(148, 163, 184, .15); border-radius: 24px;
+    padding: 28px; backdrop-filter: blur(12px);
+  }
+  h1 { font-size: 20px; display: flex; align-items: center; gap: 10px; }
+  h1 .badge { font-size: 11px; background: #7c3aed; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+  .sub { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+  #status { font-size: 13px; margin-top: 14px; padding: 8px 14px; border-radius: 12px; background: rgba(15,23,42,.6); color: #a5b4fc; min-height: 36px; display:flex; align-items:center; gap:8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; flex: none; }
+  .dot.listen { background: #22c55e; animation: pulse 1s infinite; }
+  .dot.speak  { background: #a855f7; animation: pulse .7s infinite; }
+  .dot.think  { background: #eab308; animation: pulse .5s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  #callBtn {
+    margin: 22px auto 6px; display: flex; align-items: center; justify-content: center;
+    width: 92px; height: 92px; border-radius: 50%; border: none; cursor: pointer;
+    font-size: 36px; color: #fff; transition: all .25s;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    box-shadow: 0 8px 32px rgba(124, 58, 237, .45);
+  }
+  #callBtn.active { background: linear-gradient(135deg, #dc2626, #b91c1c); box-shadow: 0 8px 32px rgba(220, 38, 38, .5); }
+  #callBtn:hover { transform: scale(1.06); }
+  .hint { text-align: center; color: #64748b; font-size: 12px; margin-bottom: 14px; }
+  #log { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; max-width: 88%; }
+  .msg.user { align-self: flex-end; background: #4f46e5; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.ai   { align-self: flex-start; background: rgba(51, 65, 85, .8); border-bottom-left-radius: 4px; }
+  .msg.interim { opacity: .5; font-style: italic; }
+  .footer { margin-top: 16px; font-size: 11px; color: #475569; text-align: center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📞 VetKlinika <span class="badge">Canlı AI Resepsiyon</span></h1>
+  <div class="sub">Banu ilə danışın — sözünü kəssəniz susub sizi dinləyəcək</div>
+  <div id="status"><span class="dot" id="dot"></span><span id="statusText">Zəngə başlamaq üçün düyməni basın</span></div>
+  <button id="callBtn">📞</button>
+  <div class="hint">Qulaqlıq tövsiyə olunur (əks-səda olmasın deyə)</div>
+  <div id="log"></div>
+  <div class="footer" id="brainInfo"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id)
+const log = $('log'), dot = $('dot'), statusText = $('statusText'), callBtn = $('callBtn')
+
+let inCall = false
+let history = []          // {role:'user'|'assistant', text}
+let recognition = null
+let currentAudio = null
+let processing = false
+let interimEl = null
+
+fetch('/api/status').then(r => r.json()).then(s => {
+  $('brainInfo').textContent = `beyin: ${s.brain} • səs: ${s.voice}`
+})
+
+function setStatus(mode, text) {
+  dot.className = 'dot' + (mode ? ' ' + mode : '')
+  statusText.textContent = text
+}
+
+function addMsg(role, text, interim = false) {
+  const el = document.createElement('div')
+  el.className = 'msg ' + (role === 'user' ? 'user' : 'ai') + (interim ? ' interim' : '')
+  el.textContent = text
+  log.appendChild(el)
+  log.scrollTop = log.scrollHeight
+  return el
+}
+
+// Barge-in: AI danışarkən müştəri danışmağa başlasa, AI susur
+function stopSpeaking() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; setStatus('listen', 'Sizi dinləyirəm...') }
+}
+
+function speak(base64) {
+  return new Promise(resolve => {
+    stopSpeaking()
+    const audio = new Audio('data:audio/mpeg;base64,' + base64)
+    currentAudio = audio
+    setStatus('speak', 'Banu danışır... (sözünü kəsə bilərsiniz)')
+    audio.onended = () => { currentAudio = null; if (inCall) setStatus('listen', 'Sizi dinləyirəm...'); resolve() }
+    audio.onerror = () => { currentAudio = null; resolve() }
+    audio.play().catch(() => resolve())
+  })
+}
+
+async function sendToAI(text) {
+  processing = true
+  history.push({ role: 'user', text })
+  setStatus('think', 'Banu düşünür...')
+  try {
+    const res = await fetch('/api/talk', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history })
+    })
+    const data = await res.json()
+    if (data.error) throw new Error(data.error)
+    history.push({ role: 'assistant', text: data.reply })
+    addMsg('ai', data.reply)
+    processing = false
+    await speak(data.audio)
+  } catch (e) {
+    processing = false
+    addMsg('ai', 'Sistem Xətası: ' + e.message)
+    setStatus('listen', 'Sizi dinləyirəm...')
+  }
+}
+
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SR) { alert('Brauzeriniz səs tanımanı dəstəkləmir. Google Chrome istifadə edin.'); return null }
+  const rec = new SR()
+  rec.lang = 'az-AZ'
+  rec.continuous = true
+  rec.interimResults = true
+
+  rec.onresult = e => {
+    let interim = '', final = ''
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript
+      if (e.results[i].isFinal) final += t; else interim += t
+    }
+    // Barge-in: danışıq aşkarlanan kimi AI-ı sustur
+    if ((interim.trim() || final.trim()) && currentAudio) stopSpeaking()
+
+    if (interim.trim()) {
+      if (!interimEl) interimEl = addMsg('user', interim, true)
+      else interimEl.textContent = interim
+    }
+    if (final.trim() && !processing) {
+      if (interimEl) { interimEl.remove(); interimEl = null }
+      addMsg('user', final.trim())
+      sendToAI(final.trim())
+    }
+  }
+
+  rec.onerror = e => {
+    if (e.error === 'not-allowed') { setStatus('', 'Mikrofon icazəsi verilmədi'); endCall() }
+  }
+
+  rec.onend = () => { if (inCall) { try { rec.start() } catch {} } } // fasiləsiz dinləmə
+
+  return rec
+}
+
+async function startCall() {
+  recognition = initRecognition()
+  if (!recognition) return
+  inCall = true
+  history = []
+  log.innerHTML = ''
+  callBtn.classList.add('active')
+  callBtn.textContent = '❌'
+  try { recognition.start() } catch {}
+  setStatus('listen', 'Sizi dinləyirəm...')
+  // Salamlama
+  const greeting = 'Salam! VetKlinikaya xoş gəlmisiniz, mən Banuyam. Sizə necə kömək edə bilərəm?'
+  history.push({ role: 'assistant', text: greeting })
+  addMsg('ai', greeting)
+  const res = await fetch('/api/talk', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ history: [{ role: 'user', text: '__salamla__' }] })
+  }).catch(() => null)
+  if (res && res.ok) {
+    const data = await res.json()
+    if (data.audio) await speak(data.audio)
+  }
+}
+
+function endCall() {
+  inCall = false
+  stopSpeaking()
+  if (recognition) { try { recognition.stop() } catch {} recognition = null }
+  callBtn.classList.remove('active')
+  callBtn.textContent = '📞'
+  setStatus('', 'Zəng bitdi. Yenidən başlamaq üçün düyməni basın')
+}
+
+callBtn.onclick = () => inCall ? endCall() : startCall()
+</script>
+</body>
+</html>

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import { processAiReceptionistMessage } from '@/app/actions/ai-receptionist'
-import { sendWhatsAppMessage } from '@/lib/whatsapp'
-import { prisma } from '@/lib/prisma'
 
 /**
  * WhatsApp Webhook API Route
@@ -66,42 +64,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Mesaj mətni tapılmadı' }, { status: 400 })
     }
 
-    // 2. AI Resepşn Mühərrikini Çalışdır (Pasiyent yaradılır, Randevu PENDING olunur, Mesaj yadda saxlanılır)
+    // 2. AI Resepşn Mühərrikini Çalışdır (Gemini beyin → PENDING randevu / eskalasiya, mesajlar yadda saxlanılır)
     const result = await processAiReceptionistMessage({ text, phone, whatsappJid, audioUrl, isAudio })
 
-    if (!result.success || !result.appointment) {
+    if (!result.success || !result.replyMessage) {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }
 
-    const app = result.appointment
-    const petName = app.patient.name
-    const species = app.patient.species
-
-    // 3. Müştəriyə Avtomatik Təbii WhatsApp Cavab Mətni Hazırla
-    const replyMessage = `🐾 *VetKlinika AI Destək* 🐾\n\n` +
-      `Salam! Müraciətiniz qeydə alındı.\n` +
-      `📌 *Xəstə:* ${petName} (${species})\n` +
-      `📌 *Müraciət Növü:* ${app.reason}\n\n` +
-      `Həkimlərimiz müraciətinizi yoxlayıb təsdiqlədikdən sonra sizə ikinci dəqiqləşdirmə mesajı göndəriləcək. Təşəkkür edirik! 🙏`
-
-    // 4. Avtomatik WhatsApp Yanıtı Göndər və Baza'ya yaz (processAiReceptionistMessage daxilində ola bilər və ya ayrıca yazmaq olar, lakin replyMessage zatən bəllidir)
-    await sendWhatsAppMessage(phone, replyMessage)
-
-    const owner = await prisma.owner.findUnique({ where: { phone } })
-    if (owner) {
-      await prisma.message.create({
-        data: {
-          text: replyMessage,
-          isFromClinic: true,
-          ownerId: owner.id
-        }
-      })
-    }
-
+    // Qeyd: göndərişi gateway edir (isAudio-ya görə mətn/səs seçir) — burada göndərmirik.
     return NextResponse.json({
       success: true,
-      appointmentId: app.id,
-      replyMessage,
+      appointmentId: result.appointmentId,
+      urgent: result.urgent,
+      replyMessage: result.replyMessage,
       phone
     })
   } catch (error: any) {

@@ -49,3 +49,5 @@ public/whatsapp-status.json
 
 # istifadəçi yükləmələri (müştəri məlumatı — repoya düşməməlidir)
 public/uploads/
+voice-agent/.env
+.gstack/
