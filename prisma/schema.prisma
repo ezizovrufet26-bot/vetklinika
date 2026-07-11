@@ -14,6 +14,16 @@ model Clinic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Klinika brendinqi — gələcək ictimai klinika kataloqu səhifəsi üçün
+  // (həkim heyəti burada saxlanmır, Clinic.users-dən DOCTOR/ADMIN rollu
+  // istifadəçilər kimi törədilir)
+  logoUrl     String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  publicPhone String?
+  services    String[] @default([])
+
   users User[]
 }
 
@@ -27,6 +37,8 @@ enum UserRole {
 model User {
   id           String   @id @default(uuid())
   name         String
+  title        String? // Məs: "Növbətçi Baş Həkim" — panelin başlığında və ictimai kataloqda göstərilir
+  photoUrl     String?
   email        String?  @unique
   phone        String?  @unique
   passwordHash String
