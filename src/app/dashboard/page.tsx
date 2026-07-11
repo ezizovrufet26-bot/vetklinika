@@ -4,7 +4,6 @@ import PendingApprovalWidget from "@/components/PendingApprovalWidget";
 import VoiceSimulatorModal from "@/components/VoiceSimulatorModal";
 import { getPendingAiAppointments } from "@/app/actions/ai-receptionist";
 import DoctorHeaderProfile from "@/components/DoctorHeaderProfile";
-import ClinicSwitcher from "@/components/ClinicSwitcher";
 import AppShell from "@/components/AppShell";
 import DashboardStats from "@/components/DashboardStats";
 import { FadeUp } from "@/components/ui/motion";
@@ -31,7 +30,6 @@ export default async function DashboardPage() {
     <AppShell
       headerActions={
         <div className="hidden md:flex items-center gap-3">
-          <ClinicSwitcher />
           <DoctorHeaderProfile />
         </div>
       }

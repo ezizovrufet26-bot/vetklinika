@@ -3,14 +3,14 @@ import { verifySessionToken, SESSION_COOKIE } from '@/lib/auth'
 
 /**
  * Marşrut qoruması. Aşağıdakılar İCTİMAİDİR:
- *  - "/" (landing), "/login"
+ *  - "/" (landing), "/login", "/forgot-password"
  *  - /api/whatsapp/* (webhook — xarici servis çağırır)
  *  - /api/cron/* (xatırlatma cron-u)
  *  - /api/access-requests POST (landing-dəki qeydiyyat forması)
  * Qalan hər şey etibarlı sessiya tələb edir.
  */
 
-const PUBLIC_PATHS = ['/', '/login']
+const PUBLIC_PATHS = ['/', '/login', '/forgot-password']
 const PUBLIC_API_PREFIXES = ['/api/whatsapp', '/api/cron']
 
 export async function middleware(req: NextRequest) {
