@@ -10,6 +10,7 @@
 
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode'
+import qrcodeTerminal from 'qrcode-terminal'
 import pino from 'pino'
 import fs from 'fs'
 import path from 'path'
@@ -84,6 +85,25 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   if (req.method === 'OPTIONS') { res.writeHead(200); return res.end() }
+
+  // Telefon kamerası ilə skan üçün QR-i birbaşa göstər — public/qr.png-in
+  // heç bir static-file server-i yoxdur, bura olmadan fayl əlçatan deyildi.
+  if (req.method === 'GET' && req.url === '/qr') {
+    const qrPath = path.join(process.cwd(), 'public', 'qr.png')
+    if (fs.existsSync(qrPath)) {
+      res.writeHead(200, { 'Content-Type': 'image/png' })
+      return fs.createReadStream(qrPath).pipe(res)
+    }
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+    return res.end('QR hazır deyil — ya artıq bağlanıb, ya da hələ yaradılmayıb. `railway logs` yoxlayın.')
+  }
+
+  if (req.method === 'GET' && req.url === '/status') {
+    const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
+    const body = fs.existsSync(statusPath) ? fs.readFileSync(statusPath, 'utf-8') : JSON.stringify({ status: 'unknown' })
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    return res.end(body)
+  }
 
   if (req.method === 'POST' && req.url === '/send') {
     let body = ''
@@ -174,6 +194,9 @@ async function connectToWhatsApp() {
       console.log('\n==================================================')
       console.log('📱 KLİNİKANIN WHATSAPP HESABINI BAĞLAMAQ ÜÇÜN QR KOD 📱')
       console.log('==================================================\n')
+
+      // ASCII QR — birbaşa `railway logs`-da görünür, ayrıca URL/fayl lazım deyil
+      qrcodeTerminal.generate(qr, { small: true })
 
       const qrPath = path.join(process.cwd(), 'public', 'qr.png')
       qrcode.toFile(qrPath, qr, { color: { dark: '#000000', light: '#FFFFFF' } }, function (err) {
