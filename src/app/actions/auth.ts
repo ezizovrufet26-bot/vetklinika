@@ -127,26 +127,48 @@ export async function sendResetOtp(identifier: string) {
     data: { otpCode, otpExpires }
   })
 
-  // Send via WhatsApp if user has phone, or if identifier is phone
+  // Kodu hər iki kanalla göndər: WhatsApp (nömrə) + email (varsa)
   const targetPhone = user.phone || phone
   let sentWp = false
   if (targetPhone) {
     try {
       const { sendWhatsAppMessage } = await import('@/lib/whatsapp')
-      const wpMsg = `🏥 *VetKlinika Şifrə Sıfırlama*\n\nŞifrə sıfırlama kodunuz: *${otpCode}*\nBu kod 10 dəqiqə ərzində aktivdir. Xahiş edirik heç kimlə paylaşmayın.`
-      await sendWhatsAppMessage(targetPhone, wpMsg)
-      sentWp = true
+      const wpMsg = `🏥 *VetKlinika Kod*\n\nTəhlükəsizlik kodunuz: *${otpCode}*\nBu kod 10 dəqiqə ərzində aktivdir. Xahiş edirik heç kimlə paylaşmayın.`
+      const r = await sendWhatsAppMessage(targetPhone, wpMsg)
+      sentWp = r.success
     } catch (e) {
       console.error('Failed to send OTP via WhatsApp:', e)
     }
   }
 
-  // Log to console (simulated Email)
-  console.log(`\n====================================\n📧 OTP EMAIL (Simulated)\nKimə: ${user.email || user.phone}\nKOD: ${otpCode}\n====================================\n`)
+  let sentEmail = false
+  if (user.email) {
+    try {
+      const { sendEmail } = await import('@/lib/email')
+      const r = await sendEmail(
+        user.email,
+        'VetKlinika — təhlükəsizlik kodu',
+        `<div style="font-family:sans-serif"><p>Təhlükəsizlik kodunuz:</p>
+          <p style="font-size:28px;font-weight:bold;letter-spacing:4px">${otpCode}</p>
+          <p style="color:#666;font-size:13px">Bu kod 10 dəqiqə ərzində aktivdir. Heç kimlə paylaşmayın.</p></div>`
+      )
+      sentEmail = r.success
+    } catch (e) {
+      console.error('Failed to send OTP via email:', e)
+    }
+  }
 
-  return { 
-    success: `Təhlükəsizlik kodu ${sentWp ? 'WhatsApp nömrənizə və ' : ''}e-poçtunuza göndərildi.`, 
-    userId: user.id 
+  // Heç bir kanal işləməsə, kod konsola düşür (yalnız dev/diaqnostika üçün)
+  if (!sentWp && !sentEmail) {
+    console.log(`\n====================================\n📧 OTP (kanal çatmadı)\nKimə: ${user.email || user.phone}\nKOD: ${otpCode}\n====================================\n`)
+  }
+
+  const channels = [sentWp && 'WhatsApp nömrənizə', sentEmail && 'e-poçtunuza'].filter(Boolean)
+  return {
+    success: channels.length
+      ? `Təhlükəsizlik kodu ${channels.join(' və ')} göndərildi.`
+      : 'Kod yaradıldı. Çatmadısa, bir az sonra yenidən cəhd edin və ya admin ilə əlaqə saxlayın.',
+    userId: user.id
   }
 }
 
