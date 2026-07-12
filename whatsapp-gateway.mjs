@@ -228,14 +228,19 @@ async function connectToWhatsApp() {
     }
 
     if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut
-      console.log('Bağlantı kəsildi, yenidən bağlanır...', shouldReconnect)
+      const statusCode = (lastDisconnect?.error)?.output?.statusCode
+      const reason = Object.entries(DisconnectReason).find(([, v]) => v === statusCode)?.[0] || statusCode
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+      console.log(`[GATEWAY] Bağlantı kəsildi — səbəb: ${reason} (${statusCode}). Mesaj: ${lastDisconnect?.error?.message}. Yenidən bağlanır: ${shouldReconnect}`)
 
       const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
-      fs.writeFileSync(statusPath, JSON.stringify({ status: 'disconnected', timestamp: Date.now() }))
+      fs.writeFileSync(statusPath, JSON.stringify({ status: 'disconnected', reason, timestamp: Date.now() }))
 
       if (shouldReconnect) {
-        connectToWhatsApp()
+        // Ard-arda dövr (crash-loop) WA-nın sürət-limitinə düşməsin deyə qısa gecikmə
+        setTimeout(connectToWhatsApp, 3000)
+      } else {
+        console.log('[GATEWAY] loggedOut — bağlı cihaz silinib, yenidən QR skan lazımdır.')
       }
     } else if (connection === 'open') {
       console.log('\n✅ WHATSAPP UĞURLA BAĞLANDI! SİSTEM REAL MESAJLARI QƏBUL EDİR. ✅\n')
