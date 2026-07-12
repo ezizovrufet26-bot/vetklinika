@@ -8,7 +8,7 @@
 // Qoruyucular: idempotency (mesaj ID), per-nömrə növbə, günlük limitlər,
 //   2-6s insani gecikmə, manual-takeover susması, PII-təmiz loglar.
 
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage } from '@whiskeysockets/baileys'
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage, fetchLatestBaileysVersion, Browsers } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode'
 import qrcodeTerminal from 'qrcode-terminal'
 import pino from 'pino'
@@ -178,11 +178,26 @@ async function sendVoiceReply(sock, jid, phone, replyText) {
   }
 }
 
+// Railway container fayl sistemi müvəqqətidir — hər deploy/restart-da sıfırlanır.
+// Daimi Volume (/data) qoşulubsa, sessiya oradan davam edir; yoxdursa (lokal dev)
+// layihə qovluğuna yazır.
+const AUTH_DIR = fs.existsSync('/data')
+  ? path.join('/data', 'baileys_auth_info')
+  : 'baileys_auth_info'
+
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+
+  // WA server-i köhnə protokol versiyası ilə gələn qoşulmaları dərhal kəsir —
+  // QR tükənmədən "bağlan, kəs, təzə QR" dövrünə düşməyin ən çox rast gəlinən
+  // səbəbi budur. version sərt kodlaşdırılmır, hər cəhddə canlı sorğulanır.
+  const { version } = await fetchLatestBaileysVersion()
+  console.log(`[GATEWAY] Baileys WA versiyası: ${version.join('.')}`)
 
   const sock = makeWASocket({
     auth: state,
+    version,
+    browser: Browsers.macOS('Desktop'),
     printQRInTerminal: false,
     logger: pino({ level: 'silent' })
   })
