@@ -81,7 +81,7 @@ export default function SuperAdminPanel() {
       {/* SuperAdmin trigger */}
       <button
         onClick={() => { setIsOpen(true); loadRequests() }}
-        className="fixed bottom-8 left-8 z-50 bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-5 py-3.5 rounded-full shadow-premium flex items-center gap-3 font-extrabold text-xs transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-6 z-50 bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-5 py-3.5 rounded-full shadow-premium flex items-center gap-3 font-extrabold text-xs transition-all hover:scale-105 active:scale-95"
       >
         <Crown className="w-4.5 h-4.5 text-warning" />
         <span>Yaradıcı Paneli</span>

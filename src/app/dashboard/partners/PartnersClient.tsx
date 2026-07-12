@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Building2, Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, X,
-  CheckCircle, XCircle, UserRound, Sparkles,
+  CheckCircle, XCircle, UserRound, Sparkles, MapPin,
 } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import PageHeader from '@/components/PageHeader'
@@ -124,6 +124,26 @@ function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => v
       : DEFAULT_HOURS
   )
   const [prices, setPrices] = useState<PriceItem[]>(parsePriceList(clinic?.priceList))
+  const [lat, setLat] = useState(clinic?.latitude?.toString() || '')
+  const [lng, setLng] = useState(clinic?.longitude?.toString() || '')
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'locating' | 'error'>('idle')
+
+  const handleUseGps = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus('error')
+      return
+    }
+    setGpsStatus('locating')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6))
+        setLng(pos.coords.longitude.toFixed(6))
+        setGpsStatus('idle')
+      },
+      () => setGpsStatus('error'),
+      { enableHighAccuracy: true, timeout: 10_000 }
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -196,14 +216,37 @@ function ClinicForm({ clinic, onDone }: { clinic: Clinic | null; onDone: () => v
           placeholder="Peyvənd, Cərrahiyyə, Rentgen, UZİ, Laboratoriya" className={inputCls} />
       </div>
 
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Xəritə koordinatları</label>
+          <button
+            type="button"
+            onClick={handleUseGps}
+            disabled={gpsStatus === 'locating'}
+            className="flex items-center gap-1.5 text-xs font-bold text-primary hover:brightness-110 disabled:opacity-50 transition-all"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            {gpsStatus === 'locating' ? 'Konum tapılır...' : 'Hazırkı GPS-dən al'}
+          </button>
+        </div>
+        {gpsStatus === 'error' && (
+          <p className="text-[11px] font-bold text-destructive">
+            Konum alına bilmədi — brauzer icazəsini yoxlayın, ya da koordinatları əl ilə yazın.
+          </p>
+        )}
+        <p className="text-[10px] text-muted-foreground">
+          Klinikada olan telefon/kompüterdən bu düyməyə basın — dəqiq koordinat avtomatik dolur.
+          "Yol tarifi" düyməsi ziyarətçinin öz konumundan bura marşrut qurur.
+        </p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Enlik (lat)</label>
-          <input name="latitude" inputMode="decimal" defaultValue={clinic?.latitude?.toString() || ''} placeholder="40.4093" className={inputCls} />
+          <input name="latitude" inputMode="decimal" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="40.4093" className={inputCls} />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Uzunluq (lng)</label>
-          <input name="longitude" inputMode="decimal" defaultValue={clinic?.longitude?.toString() || ''} placeholder="49.8671" className={inputCls} />
+          <input name="longitude" inputMode="decimal" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="49.8671" className={inputCls} />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Google Maps linki</label>
