@@ -143,8 +143,12 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
-server.listen(3001, () => {
-  console.log('🔗 Internal WhatsApp Sender API listening on port 3001')
+// Railway (və bənzər host-lar) PORT env-i ilə öz portunu təyin edir — sərt
+// kodlaşdırılmış 3001 həmin platformalarda 502 ("Application failed to
+// respond") ilə nəticələnir, çünki proxy başqa portu gözləyir.
+const PORT = parseInt(process.env.PORT || '3001', 10)
+server.listen(PORT, () => {
+  console.log(`🔗 Internal WhatsApp Sender API listening on port ${PORT}`)
 })
 
 // ── Səsli cavab: mətn → Banu mp3 → ogg/opus → ptt voice note ───────────
