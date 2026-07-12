@@ -13,6 +13,8 @@
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
+const OPENAI_KEY = process.env.OPENAI_API_KEY || ''
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
 export type IntakeAction =
   | 'urgent_escalation'
@@ -90,6 +92,52 @@ async function gemini(system: string, contents: { role: string; parts: { text: s
   }
 }
 
+// ── OpenAI Chat Completions — Gemini olmayanda / xəta verəndə fallback ──
+async function openai(system: string, contents: { role: string; parts: { text: string }[] }[], maxTokens: number): Promise<string | null> {
+  if (!OPENAI_KEY) return null
+  try {
+    const messages = [
+      { role: 'system', content: system },
+      ...contents.map(c => ({ role: c.role === 'model' ? 'assistant' : 'user', content: c.parts.map(p => p.text).join('\n') })),
+    ]
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages,
+        temperature: 0.4,
+        max_tokens: maxTokens,
+      }),
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!res.ok) {
+      console.error('[ai-brain] OpenAI status:', res.status)
+      return null
+    }
+    const data = await res.json()
+    const raw = data.choices?.[0]?.message?.content
+    if (typeof raw !== 'string' || !raw.trim()) return null
+    // GPT bəzən qadağan olunsa da markdown fence əlavə edir — Gemini heç vaxt etmir,
+    // ona görə çağıran tərəf (məs. JSON extractor) fence-siz mətn gözləyir.
+    const text = raw.trim().replace(/^```(?:\w+)?\s*/i, '').replace(/\s*```$/, '')
+    return text.trim() || null
+  } catch (e: any) {
+    console.error('[ai-brain] OpenAI istisna:', e.message)
+    return null
+  }
+}
+
+/** Gemini əsas provayder; açar yoxdursa ya da çağırış uğursuz olsa OpenAI-a keçir. */
+async function llm(system: string, contents: { role: string; parts: { text: string }[] }[], maxTokens = 300): Promise<string | null> {
+  const geminiResult = await gemini(system, contents, maxTokens)
+  if (geminiResult) return geminiResult
+  return openai(system, contents, maxTokens)
+}
+
 function historyToContents(history: BrainInput['history'], userText: string) {
   const contents = history.map(h => ({
     role: h.role === 'user' ? 'user' : 'model',
@@ -124,7 +172,7 @@ const REPLY_PROMPT_TEXT_SUFFIX = `
 
 export async function receptionistReply(input: BrainInput): Promise<string | null> {
   const system = REPLY_PROMPT_BASE + (input.isAudio ? REPLY_PROMPT_VOICE_SUFFIX : REPLY_PROMPT_TEXT_SUFFIX)
-  return gemini(system, historyToContents(input.history, input.userText), 250)
+  return llm(system, historyToContents(input.history, input.userText), 250)
 }
 
 // ── Çağırış 2: strict JSON extractor ────────────────────────────────────
@@ -205,7 +253,7 @@ export async function extractIntake(input: BrainInput): Promise<IntakeResult | n
   const convo = [...input.history, { role: 'user' as const, text: input.userText }]
     .map(h => `${h.role === 'user' ? 'Müştəri' : 'Banu'}: ${h.text}`)
     .join('\n')
-  const raw = await gemini(extractorPrompt(), [{ role: 'user', parts: [{ text: convo }] }], 300)
+  const raw = await llm(extractorPrompt(), [{ role: 'user', parts: [{ text: convo }] }], 300)
   if (!raw) return null
   return validateIntake(raw)
 }
@@ -253,5 +301,5 @@ export async function draftSoapNote(input: SoapDraftInput): Promise<string | nul
     vitals ? `Vitallar: ${vitals}` : null,
   ].filter(Boolean).join('\n')
 
-  return gemini(SOAP_DRAFT_PROMPT, [{ role: 'user', parts: [{ text: userText }] }], 300)
+  return llm(SOAP_DRAFT_PROMPT, [{ role: 'user', parts: [{ text: userText }] }], 300)
 }
