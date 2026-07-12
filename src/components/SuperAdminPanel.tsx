@@ -14,6 +14,7 @@ export default function SuperAdminPanel() {
   const [requests, setRequests] = useState<AccessRequest[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [me, setMe] = useState<{ authenticated: boolean; role?: string; name?: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
 
   const isSuperAdmin = me?.authenticated && (me.role === 'SUPERADMIN' || me.role === 'ADMIN')
 
@@ -58,15 +59,37 @@ export default function SuperAdminPanel() {
   }, [isSuperAdmin, loadRequests])
 
   const updateStatus = async (reqId: string, status: 'APPROVED' | 'REJECTED') => {
-    setRequests(prev => prev.map(r => (r.id === reqId ? { ...r, status } : r)))
+    setFeedback(null)
+    if (status === 'REJECTED') {
+      setRequests(prev => prev.map(r => (r.id === reqId ? { ...r, status } : r)))
+    }
     try {
-      await fetch('/api/access-requests', {
+      const res = await fetch('/api/access-requests', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: reqId, status }),
       })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setFeedback({ type: 'error', text: data?.error || 'Əməliyyat uğursuz oldu.' })
+        return
+      }
+
+      if (status === 'APPROVED') {
+        setRequests(prev => prev.map(r => (r.id === reqId ? { ...r, status: 'APPROVED' } : r)))
+        setFeedback(
+          data?.whatsappSent
+            ? { type: 'success', text: 'Təsdiqləndi — giriş məlumatları WhatsApp ilə göndərildi.' }
+            : {
+                type: 'warning',
+                text: `Hesab yaradıldı, lakin WhatsApp mesajı getmədi (${data?.whatsappError || 'naməlum xəta'}). Giriş məlumatlarını əl ilə çatdırın.`,
+              }
+        )
+      }
     } catch (err) {
       console.error('API update failed:', err)
+      setFeedback({ type: 'error', text: 'Şəbəkə xətası — yenidən cəhd edin.' })
     }
   }
 
@@ -115,6 +138,19 @@ export default function SuperAdminPanel() {
                 </p>
               </div>
             </div>
+
+            {feedback && (
+              <div className={`text-xs font-bold px-4 py-3 rounded-xl border flex items-center justify-between gap-3 ${
+                feedback.type === 'success' ? 'bg-success/10 text-success border-success/25' :
+                feedback.type === 'warning' ? 'bg-warning/10 text-warning border-warning/25' :
+                'bg-destructive/10 text-destructive border-destructive/25'
+              }`}>
+                <span>{feedback.text}</span>
+                <button onClick={() => setFeedback(null)} className="shrink-0 opacity-70 hover:opacity-100">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             <div className="space-y-4">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-2">

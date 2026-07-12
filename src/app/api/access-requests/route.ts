@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
+import { normalizeIdentifier } from '@/lib/auth'
+import { sendWhatsAppMessage } from '@/lib/whatsapp'
+
+const APP_URL = process.env.APP_URL || 'https://vetklinika-aqkn.vercel.app'
 
 /** GET/PATCH yalnız SUPERADMIN/ADMIN üçün; POST landing formasından ictimaidir */
 async function requireAdmin() {
@@ -9,6 +15,15 @@ async function requireAdmin() {
     return null
   }
   return session
+}
+
+/** Oxunaqlı müvəqqəti şifrə: qarışdırıcı simvollar (0/O, 1/l/I) çıxarılıb */
+function generateTempPassword(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  const bytes = crypto.randomBytes(10)
+  let pass = ''
+  for (let i = 0; i < 10; i++) pass += alphabet[bytes[i] % alphabet.length]
+  return pass
 }
 
 export async function GET() {
@@ -45,6 +60,16 @@ export async function POST(request: Request) {
         status: 'PENDING'
       }
     })
+
+    // Müraciətin qeydə alındığını dərhal WhatsApp ilə təsdiqlə (best-effort — uğursuzluq müraciəti pozmasın)
+    try {
+      await sendWhatsAppMessage(
+        newRequest.phone,
+        `🐾 *VetKlinika*\n\nSalam ${newRequest.doctorName}! "${newRequest.clinicName}" üçün müraciətiniz qəbul edildi.\nAdminlərimiz qısa zamanda yoxlayıb təsdiqləyəcək — təsdiqləndikdən sonra giriş məlumatlarınızı bu nömrəyə göndərəcəyik.`
+      )
+    } catch (e) {
+      console.error('Failed to send confirmation WhatsApp:', e)
+    }
 
     return NextResponse.json(newRequest, { status: 201 })
   } catch (error: any) {
