@@ -1,5 +1,11 @@
-// VetKlinika WhatsApp Gateway (Baileys)
+// VetKlinika WhatsApp Gateway (whatsapp-web.js)
 // Mətn mesajları + SƏSLİ MESAJ dialoqu (STT→beyin→TTS) + zəng yönləndirməsi.
+//
+// Baileys → whatsapp-web.js keçidi (2026-07-12): Baileys öz WA protokolunu
+// yenidən yazır və Railway-dən bağlananda "connectionClosed (428)" ilə
+// dövrə düşürdü (QR heç görünmədən). whatsapp-web.js əsl Chromium ilə
+// WhatsApp Web-i təqlid edir — eyni Railway mühitində (Modern Ferma layihəsi)
+// sübut olunmuş işlək yanaşmadır.
 //
 // Səs axını (Codex konsultasiyası ilə razılaşdırılıb, bax:
 // ai-debate/transcripts/vet-voice-icra-2026-07-10/synthesis.md):
@@ -8,10 +14,9 @@
 // Qoruyucular: idempotency (mesaj ID), per-nömrə növbə, günlük limitlər,
 //   2-6s insani gecikmə, manual-takeover susması, PII-təmiz loglar.
 
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, downloadMediaMessage, fetchLatestBaileysVersion, Browsers } from '@whiskeysockets/baileys'
+import pkg from 'whatsapp-web.js'
 import qrcode from 'qrcode'
 import qrcodeTerminal from 'qrcode-terminal'
-import pino from 'pino'
 import fs from 'fs'
 import path from 'path'
 import http from 'http'
@@ -19,22 +24,24 @@ import { v2 as cloudinary } from 'cloudinary'
 import { fileURLToPath } from 'node:url'
 import { loadEnv, transcribeAudio, synthesizeSpeech, mp3ToOggOpus } from './voice-agent/voice-lib.mjs'
 
+const { Client, LocalAuth, MessageMedia } = pkg
+
 // ── Env: .env faylı + process.env (process.env üstündür) ────────────────
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fileEnv = loadEnv(__dirname)
 const env = (k, d = '') => process.env[k] || fileEnv[k] || d
 
 cloudinary.config({
-  cloud_name: env('CLOUDINARY_CLOUD_NAME', 'dxrtxojca'),
-  api_key: env('CLOUDINARY_API_KEY', '459296421142521'),
-  api_secret: env('CLOUDINARY_API_SECRET', 'ErJ_jGmUDh9UD7Ft6kG5T9kWKx0'),
+  cloud_name: env('CLOUDINARY_CLOUD_NAME'),
+  api_key: env('CLOUDINARY_API_KEY'),
+  api_secret: env('CLOUDINARY_API_SECRET'),
 })
 
 const OPENAI_KEY = env('OPENAI_API_KEY')
 const STT_MODEL = env('STT_MODEL', 'whisper-1')
 const TTS_VOICE = env('TTS_VOICE', 'az-AZ-BanuNeural')
 const WIDGET_URL = env('WIDGET_URL', '')
-const APP_URL = env('APP_URL', 'http://localhost:3000')
+const APP_URL = env('APP_URL', 'https://vetklinika-aqkn.vercel.app')
 
 // ── Qoruyucu vəziyyət (in-memory; restart-da sıfırlanır — pilot üçün qəbul) ──
 const processedMsgIds = new Set()            // idempotency: eyni mesaj iki dəfə emal olunmasın
@@ -76,8 +83,14 @@ function countAudioReply(phone) {
   else rec.count++
 }
 
+function writeStatus(status, extra = {}) {
+  const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
+  fs.writeFileSync(statusPath, JSON.stringify({ status, timestamp: Date.now(), ...extra }))
+}
+
 // ── Daxili HTTP API (panel buradan mesaj göndərir) ──────────────────────
-let globalSock = null
+let globalClient = null
+let isReady = false // 'ready' hadisəsinədək true olmur — 'client' obyekti var deyə hazırdır demək deyil
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -115,17 +128,12 @@ const server = http.createServer(async (req, res) => {
           res.writeHead(400)
           return res.end(JSON.stringify({ error: 'Phone and message required' }))
         }
-        if (globalSock) {
-          const sanitizedPhone = phone.replace(/\+/g, '')
-          let jid = sanitizedPhone.includes('@') ? sanitizedPhone : sanitizedPhone + '@s.whatsapp.net'
-          if (jid.includes(':')) {
-            const [numPart, domainPart] = jid.split('@')
-            jid = numPart.split(':')[0] + '@' + domainPart
-          }
-          console.log(`[GATEWAY] Manual göndərmə → ${jid}: ${piiSafe(message, 50)}`)
-          await globalSock.sendMessage(jid, { text: message })
+        if (globalClient && isReady) {
+          const chatId = toChatId(phone)
+          console.log(`[GATEWAY] Manual göndərmə → ${chatId}: ${piiSafe(message, 50)}`)
+          await globalClient.sendMessage(chatId, message)
           // Manual takeover: admin yazdı → bot bu söhbətdə 30 dəq susur
-          manualTakeover.set(jid, Date.now())
+          manualTakeover.set(chatId, Date.now())
           res.writeHead(200, { 'Content-Type': 'application/json' })
           return res.end(JSON.stringify({ success: true }))
         } else {
@@ -151,30 +159,43 @@ server.listen(PORT, () => {
   console.log(`🔗 Internal WhatsApp Sender API listening on port ${PORT}`)
 })
 
+/** "+994501234567" / "994501234567" / jid → "994501234567@c.us" */
+function toChatId(phone) {
+  let clean = (phone || '').replace(/\+/g, '')
+  if (clean.includes('@')) return clean
+  return clean + '@c.us'
+}
+
+/** jid ("994501234567@c.us") → "+994501234567" */
+function chatIdToPhone(chatId) {
+  return '+' + (chatId.split('@')[0] || '').replace(/\D/g, '')
+}
+
 // ── Səsli cavab: mətn → Banu mp3 → ogg/opus → ptt voice note ───────────
-async function sendVoiceReply(sock, jid, phone, replyText) {
+async function sendVoiceReply(client, chatId, phone, replyText) {
   try {
     if (!canSendAudioReply(phone)) {
       console.log(`[VOICE] ${piiSafe(phone, 8)} günlük səsli cavab limitinə çatdı — mətn göndərilir`)
-      await sock.sendMessage(jid, { text: replyText })
+      await client.sendMessage(chatId, replyText)
       return
     }
-    await sock.sendPresenceUpdate('recording', jid).catch(() => {})
+    try {
+      const chat = await client.getChatById(chatId)
+      await chat.sendStateRecording()
+    } catch { /* presence best-effort */ }
+
     const mp3 = await synthesizeSpeech(replyText, TTS_VOICE)
     if (!mp3) throw new Error('TTS null')
     const ogg = await mp3ToOggOpus(mp3)
     if (!ogg) throw new Error('ffmpeg null')
-    await sock.sendMessage(jid, {
-      audio: ogg.buffer,
-      mimetype: 'audio/ogg; codecs=opus',
-      ptt: true,
-      seconds: ogg.seconds || undefined
-    })
+
+    const media = new MessageMedia('audio/ogg; codecs=opus', ogg.buffer.toString('base64'))
+    await client.sendMessage(chatId, media, { sendAudioAsVoice: true })
     countAudioReply(phone)
     console.log(`[VOICE] 🔊 Səsli cavab göndərildi (${ogg.seconds || '?'}s)`)
   } catch (e) {
     console.error('[VOICE] Səsli cavab alınmadı, mətn fallback:', e.message)
-    await sock.sendMessage(jid, { text: replyText }).catch(() => {})
+    await client.sendMessage(chatId, replyText).catch(() => {})
   }
 }
 
@@ -182,140 +203,138 @@ async function sendVoiceReply(sock, jid, phone, replyText) {
 // Daimi Volume (/data) qoşulubsa, sessiya oradan davam edir; yoxdursa (lokal dev)
 // layihə qovluğuna yazır.
 const AUTH_DIR = fs.existsSync('/data')
-  ? path.join('/data', 'baileys_auth_info')
-  : 'baileys_auth_info'
+  ? path.join('/data', 'wwebjs_auth')
+  : 'wwebjs_auth'
 
-async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+function createClient() {
+  return new Client({
+    authStrategy: new LocalAuth({ dataPath: AUTH_DIR }),
+    puppeteer: {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+      ignoreDefaultArgs: ['--disable-extensions'],
+    },
+  })
+}
 
-  // WA server-i köhnə protokol versiyası ilə gələn qoşulmaları dərhal kəsir —
-  // QR tükənmədən "bağlan, kəs, təzə QR" dövrünə düşməyin ən çox rast gəlinən
-  // səbəbi budur. version sərt kodlaşdırılmır, hər cəhddə canlı sorğulanır.
-  const { version } = await fetchLatestBaileysVersion()
-  console.log(`[GATEWAY] Baileys WA versiyası: ${version.join('.')}`)
+function wireClient(client) {
+  globalClient = client
 
-  const sock = makeWASocket({
-    auth: state,
-    version,
-    browser: Browsers.macOS('Desktop'),
-    printQRInTerminal: false,
-    logger: pino({ level: 'silent' })
+  client.on('qr', (qr) => {
+    console.log('\n==================================================')
+    console.log('📱 KLİNİKANIN WHATSAPP HESABINI BAĞLAMAQ ÜÇÜN QR KOD 📱')
+    console.log('==================================================\n')
+
+    // ASCII QR — birbaşa `railway logs`-da görünür, ayrıca URL/fayl lazım deyil
+    qrcodeTerminal.generate(qr, { small: true })
+
+    const qrPath = path.join(process.cwd(), 'public', 'qr.png')
+    qrcode.toFile(qrPath, qr, { color: { dark: '#000000', light: '#FFFFFF' } }, function (err) {
+      if (err) console.error('QR yaratma xətası:', err)
+      console.log('✅ QR KOD YADDA SAXLANILDI: Ayarlar bölməsindən skan edin!')
+    })
+
+    writeStatus('waiting_qr')
   })
 
-  globalSock = sock
+  client.on('ready', () => {
+    console.log('\n✅ WHATSAPP UĞURLA BAĞLANDI! SİSTEM REAL MESAJLARI QƏBUL EDİR. ✅\n')
+    isReady = true
+    writeStatus('connected')
 
-  sock.ev.on('creds.update', saveCreds)
+    const qrPath = path.join(process.cwd(), 'public', 'qr.png')
+    if (fs.existsSync(qrPath)) fs.unlinkSync(qrPath)
+  })
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect, qr } = update
+  client.on('auth_failure', (msg) => {
+    console.error('[GATEWAY] Autentifikasiya xətası:', msg)
+    isReady = false
+    writeStatus('auth_failure', { message: msg })
+  })
 
-    if (qr) {
-      console.log('\n==================================================')
-      console.log('📱 KLİNİKANIN WHATSAPP HESABINI BAĞLAMAQ ÜÇÜN QR KOD 📱')
-      console.log('==================================================\n')
+  let reconnecting = false
+  client.on('disconnected', async (reason) => {
+    if (reconnecting) return // ard-arda 'disconnected' hadisəsi ikiqat reconnect başlatmasın
+    reconnecting = true
+    console.log(`[GATEWAY] Bağlantı kəsildi — səbəb: ${reason}. Yenidən başladılır.`)
+    isReady = false
+    writeStatus('disconnected', { reason: String(reason) })
+    globalClient = null
 
-      // ASCII QR — birbaşa `railway logs`-da görünür, ayrıca URL/fayl lazım deyil
-      qrcodeTerminal.generate(qr, { small: true })
+    // Köhnə Puppeteer/Chromium prosesini bağla — yoxsa hər reconnect-də
+    // zombi brauzer instansı yığılır və konteyner yaddaşı tükənir.
+    try { await client.destroy() } catch (e) { console.error('[GATEWAY] destroy xətası:', e.message) }
 
-      const qrPath = path.join(process.cwd(), 'public', 'qr.png')
-      qrcode.toFile(qrPath, qr, { color: { dark: '#000000', light: '#FFFFFF' } }, function (err) {
-        if (err) console.error('QR yaratma xətası:', err)
-        console.log('✅ QR KOD YADDA SAXLANILDI: Ayarlar bölməsindən skan edin!')
-      })
-
-      const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
-      fs.writeFileSync(statusPath, JSON.stringify({ status: 'waiting_qr', timestamp: Date.now() }))
-    }
-
-    if (connection === 'close') {
-      const statusCode = (lastDisconnect?.error)?.output?.statusCode
-      const reason = Object.entries(DisconnectReason).find(([, v]) => v === statusCode)?.[0] || statusCode
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
-      console.log(`[GATEWAY] Bağlantı kəsildi — səbəb: ${reason} (${statusCode}). Mesaj: ${lastDisconnect?.error?.message}. Yenidən bağlanır: ${shouldReconnect}`)
-
-      const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
-      fs.writeFileSync(statusPath, JSON.stringify({ status: 'disconnected', reason, timestamp: Date.now() }))
-
-      if (shouldReconnect) {
-        // Ard-arda dövr (crash-loop) WA-nın sürət-limitinə düşməsin deyə qısa gecikmə
-        setTimeout(connectToWhatsApp, 3000)
-      } else {
-        console.log('[GATEWAY] loggedOut — bağlı cihaz silinib, yenidən QR skan lazımdır.')
-      }
-    } else if (connection === 'open') {
-      console.log('\n✅ WHATSAPP UĞURLA BAĞLANDI! SİSTEM REAL MESAJLARI QƏBUL EDİR. ✅\n')
-
-      const statusPath = path.join(process.cwd(), 'public', 'whatsapp-status.json')
-      fs.writeFileSync(statusPath, JSON.stringify({ status: 'connected', timestamp: Date.now() }))
-
-      // Delete QR code file since we are connected
-      const qrPath = path.join(process.cwd(), 'public', 'qr.png')
-      if (fs.existsSync(qrPath)) fs.unlinkSync(qrPath)
-    }
+    // Ard-arda dövr (crash-loop) WA-nın sürət-limitinə düşməsin deyə qısa gecikmə.
+    // LOGOUT halında da yenidən initialize həqiqi vəziyyəti (yeni QR tələbi) göstərəcək.
+    setTimeout(() => {
+      reconnecting = false
+      const fresh = createClient()
+      wireClient(fresh)
+      fresh.initialize()
+    }, 3000)
   })
 
   // ── Gələn ZƏNGLƏR: rədd et + widget-ə yönləndir (gündə 1 mesaj) ───────
-  sock.ev.on('call', async (calls) => {
-    for (const call of calls) {
-      try {
-        if (call.status !== 'offer') continue
-        const callerJid = call.from
-        const phone = '+' + (callerJid.split('@')[0].split(':')[0] || '').replace(/\D/g, '')
-        console.log(`[CALL] 📞 Gələn zəng: ${piiSafe(phone, 8)} — rədd edilir`)
-        await sock.rejectCall(call.id, callerJid).catch(e => console.error('[CALL] reject xətası:', e.message))
+  client.on('call', async (call) => {
+    try {
+      if (call.isGroup || !call.from) return
+      const phone = chatIdToPhone(call.from)
+      console.log(`[CALL] 📞 Gələn zəng: ${piiSafe(phone, 8)} — rədd edilir`)
+      await call.reject().catch(e => console.error('[CALL] reject xətası:', e.message))
 
-        if (dailyCallMsgs.get(phone) === today()) continue // gündə 1 dəfə
-        dailyCallMsgs.set(phone, today())
+      if (dailyCallMsgs.get(phone) === today()) return // gündə 1 dəfə
+      dailyCallMsgs.set(phone, today())
 
-        await humanDelay()
-        const widgetLine = WIDGET_URL ? `\n🎙 Və ya Banu ilə canlı danışın: ${WIDGET_URL}` : ''
-        await sock.sendMessage(callerJid, {
-          text: `Salam! 🐾 Hazırda zəngə cavab verə bilmirik.\n\nSəsli mesaj göndərin — virtual resepşnimiz Banu sizə səslə cavab verəcək və randevonuzu qeydə alacaq.${widgetLine}\n\nTəcili hallarda birbaşa klinikaya gəlin.`
-        }).catch(() => {})
-      } catch (e) {
-        console.error('[CALL] Zəng emalı xətası:', e.message)
-      }
+      await humanDelay()
+      const widgetLine = WIDGET_URL ? `\n🎙 Və ya Banu ilə canlı danışın: ${WIDGET_URL}` : ''
+      await client.sendMessage(
+        call.from,
+        `Salam! 🐾 Hazırda zəngə cavab verə bilmirik.\n\nSəsli mesaj göndərin — virtual resepşnimiz Banu sizə səslə cavab verəcək və randevonuzu qeydə alacaq.${widgetLine}\n\nTəcili hallarda birbaşa klinikaya gəlin.`
+      ).catch(() => {})
+    } catch (e) {
+      console.error('[CALL] Zəng emalı xətası:', e.message)
     }
   })
 
-  sock.ev.on('messages.upsert', async (m) => {
+  client.on('message', async (msg) => {
     try {
-      const msg = m.messages[0]
-      if (!msg || msg.key.fromMe || !msg.message) return
-
-      const sender = msg.key.remoteJid
-      if (!sender || sender.includes('@g.us')) return // Qrupları ötür
+      if (msg.fromMe) return
+      const chatId = msg.from
+      if (!chatId || chatId.endsWith('@g.us')) return // Qrupları ötür
+      if (msg.isStatus || chatId === 'status@broadcast') return // WA "status" yayımlarını ötür
 
       // İdempotency: eyni mesajı iki dəfə emal etmə (retry/resync halları)
-      const msgId = msg.key.id
+      const msgId = msg.id?._serialized
       if (msgId) {
         if (processedMsgIds.has(msgId)) return
         rememberMsg(msgId)
       }
 
-      // Extract base phone number and domain, ignoring device IDs
-      const senderBase = sender.split('@')[0].split(':')[0]
-      const domainPart = sender.split('@')[1] || 's.whatsapp.net'
-      const baseJid = senderBase + '@' + domainPart
-      const cleanPhone = '+' + senderBase.replace(/\D/g, '')
+      const cleanPhone = chatIdToPhone(chatId)
 
       // Manual takeover: admin bu söhbətdə yazıbsa bot susur
-      const tk = manualTakeover.get(baseJid)
+      const tk = manualTakeover.get(chatId)
       if (tk && Date.now() - tk < TAKEOVER_MS) {
         console.log(`[GATEWAY] ${piiSafe(cleanPhone, 8)} — manual takeover aktivdir, bot susur`)
         return
       }
 
-      let text = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
-      let isAudio = false
+      let text = msg.body || ''
+      const isAudio = msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')
       let audioUrl = null
       let transcript = null
 
-      if (msg.message.audioMessage) {
-        isAudio = true
+      if (isAudio) {
         let buffer = null
         try {
-          buffer = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }) })
+          const media = await msg.downloadMedia()
+          if (media?.data) buffer = Buffer.from(media.data, 'base64')
         } catch (e) {
           console.error('Audio download xətası:', e.message)
         }
@@ -352,7 +371,7 @@ async function connectToWhatsApp() {
           const failText = transcript?.status === 'too_long'
             ? 'Səsli mesajınız çox uzundur 🙏 Zəhmət olmasa 1 dəqiqədən qısa göndərin və ya mətnlə yazın.'
             : 'Bağışlayın, səsinizi aça bilmədim 🙏 Zəhmət olmasa bir daha cəhd edin və ya mətnlə yazın.'
-          await sock.sendMessage(baseJid, { text: failText }).catch(() => {})
+          await client.sendMessage(chatId, failText).catch(() => {})
           return
         }
       }
@@ -369,7 +388,7 @@ async function connectToWhatsApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             phone: cleanPhone,
-            whatsappJid: baseJid,
+            whatsappJid: chatId,
             message: text,
             audioUrl,
             isAudio,
@@ -384,10 +403,10 @@ async function connectToWhatsApp() {
           await humanDelay() // insani gecikmə (2-6s)
           if (isAudio) {
             // Səsə səslə cavab
-            await sendVoiceReply(sock, baseJid, cleanPhone, data.replyMessage)
+            await sendVoiceReply(client, chatId, cleanPhone, data.replyMessage)
           } else {
             console.log(`📤 Mətn cavabı göndərilir (${data.replyMessage.length} simvol)`)
-            await sock.sendMessage(baseJid, { text: data.replyMessage })
+            await client.sendMessage(chatId, data.replyMessage)
           }
         }
       })
@@ -397,4 +416,6 @@ async function connectToWhatsApp() {
   })
 }
 
-connectToWhatsApp()
+const client = createClient()
+wireClient(client)
+client.initialize()
