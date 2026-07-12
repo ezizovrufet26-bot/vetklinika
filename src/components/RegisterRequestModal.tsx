@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle, Clock, User, Building2, Phone, Sparkles, X } from 'lucide-react'
+import { CheckCircle, Clock, User, Building2, Phone, Sparkles, X, Mail } from 'lucide-react'
 
 export interface AccessRequest {
   id: string
   doctorName: string
   clinicName: string
   phone: string
+  email?: string | null
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: string
 }
@@ -21,6 +22,7 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
   const [doctorName, setDoctorName] = useState('')
   const [clinicName, setClinicName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [submittedRequest, setSubmittedRequest] = useState<AccessRequest | null>(null)
 
   if (!isOpen) return null
@@ -32,7 +34,8 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
     const newReqPayload = {
       doctorName: doctorName.trim(),
       clinicName: clinicName.trim(),
-      phone: phone.trim()
+      phone: phone.trim(),
+      email: email.trim()
     }
 
     let createdReq: AccessRequest = {
@@ -40,6 +43,7 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
       doctorName: newReqPayload.doctorName,
       clinicName: newReqPayload.clinicName,
       phone: newReqPayload.phone,
+      email: newReqPayload.email || null,
       status: 'PENDING',
       createdAt: new Date().toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })
     }
@@ -96,10 +100,12 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
 
             <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200/60 text-left text-xs space-y-1.5 font-bold text-amber-900">
               <p className="flex items-center gap-2 text-amber-700">
-                <Sparkles className="w-4 h-4" /> <strong>SuperAdmin Təsdiqi Gözlənilir:</strong>
+                <Sparkles className="w-4 h-4" /> <strong>Növbəti addım:</strong>
               </p>
               <p className="text-[11px] text-amber-800 font-medium">
-                Yaradıcı Və Baş Admin (Siz) paneldə <strong>"OK (Təsdiqlə)"</strong> düyməsini sıxan kimi girişiniz anında aktivləşəcək!
+                Admin təsdiqləyən kimi WhatsApp{submittedRequest.email ? ' və email' : ''} vasitəsilə
+                <strong> şifrə təyinetmə təlimatı</strong> alacaqsınız — gələn kodla
+                <strong> öz şifrənizi özünüz seçəcəksiniz</strong>.
               </p>
             </div>
 
@@ -163,6 +169,22 @@ export default function RegisterRequestModal({ isOpen, onClose }: RegisterReques
                   required
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <Mail className="w-3.5 h-3.5 text-emerald-600" /> Email <span className="text-slate-400 normal-case font-medium">(tövsiyə olunur)</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Məs: klinika@gmail.com"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                />
+                <p className="text-[10px] text-slate-400 font-medium px-1">
+                  Giriş məlumatlarınız həm WhatsApp-a, həm email-ə göndəriləcək — biri çatmasa, digəri əldə olar.
+                </p>
               </div>
 
               <button

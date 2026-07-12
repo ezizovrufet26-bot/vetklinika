@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Crown, Check, X, Building2, User, Phone, ShieldCheck, Sparkles, LogIn } from 'lucide-react'
+import { Crown, Check, X, Building2, User, Phone, Mail, ShieldCheck, Sparkles, LogIn } from 'lucide-react'
 import { AccessRequest } from './RegisterRequestModal'
 
 /**
@@ -78,14 +78,25 @@ export default function SuperAdminPanel() {
 
       if (status === 'APPROVED') {
         setRequests(prev => prev.map(r => (r.id === reqId ? { ...r, status: 'APPROVED' } : r)))
-        setFeedback(
-          data?.whatsappSent
-            ? { type: 'success', text: 'Təsdiqləndi — giriş məlumatları WhatsApp ilə göndərildi.' }
-            : {
-                type: 'warning',
-                text: `Hesab yaradıldı, lakin WhatsApp mesajı getmədi (${data?.whatsappError || 'naməlum xəta'}). Giriş məlumatlarını əl ilə çatdırın.`,
-              }
-        )
+
+        const channels: string[] = []
+        if (data?.emailSent) channels.push('email')
+        if (data?.whatsappSent) channels.push('WhatsApp')
+        const setupUrl = data?.setupUrl || '/forgot-password'
+
+        if (channels.length > 0) {
+          // Ən azı bir kanal çatdı — müştəri təlimatı aldı, indi öz şifrəsini təyin edəcək
+          setFeedback({
+            type: 'success',
+            text: `Təsdiqləndi — şifrə təyinetmə təlimatı ${channels.join(' və ')} ilə göndərildi. Müştəri kod alıb öz şifrəsini seçəcək.`,
+          })
+        } else {
+          // Bildiriş getmədi — gizli məlumat yoxdur, admin sadəcə təlimatı ötürür
+          setFeedback({
+            type: 'warning',
+            text: `Hesab yaradıldı, amma bildiriş getmədi. Müştəriyə deyin: ${setupUrl} → nömrəsini yazsın → gələn kodla öz şifrəsini təyin etsin.`,
+          })
+        }
       }
     } catch (err) {
       console.error('API update failed:', err)
@@ -182,6 +193,11 @@ export default function SuperAdminPanel() {
                         <p className="text-xs text-muted-foreground flex items-center gap-2">
                           <Phone className="w-3.5 h-3.5 text-accent" /> {req.phone}
                         </p>
+                        {req.email && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-accent" /> {req.email}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0">
