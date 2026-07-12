@@ -272,6 +272,7 @@ model AccessRequest {
   doctorName String
   clinicName String
   phone      String
+  email      String? // Təsdiqdə giriş məlumatları həm buraya, həm WhatsApp-a göndərilir
   status     AccessRequestStatus @default(PENDING)
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
